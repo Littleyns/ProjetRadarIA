@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+# Ignore les fichiers de checkpoints Jupyter
+.ipynb_checkpoints/
+
+# Ignore les fichiers de sortie Jupyter
+*.ipynb_checkpoints/
