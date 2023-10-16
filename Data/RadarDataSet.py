@@ -2,15 +2,35 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from PreProcessing.domaines.passage_freq import get_signal_frequentiel
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from scipy.interpolate import interp1d
+
+from PreProcessing.utils import augmentDataInterp
+
+
 class RadarDataSet:
     def __init__(self, data, labels, test_size):
+        scaler = StandardScaler()
         self.X = data
         self.y = labels
-        self.test_size = test_size;
+        self.test_size = test_size
+
+
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, labels, test_size=test_size, random_state=42)
+        self.X_train = scaler.fit_transform(self.X_train)
+        self.X_test = scaler.fit_transform(self.X_test)
         self.X_freq_train = []
         self.X_freq_test = []
         self.X_freq = []
+
+        self.X_real_train = self.X_train[:, :100] # partie reelle
+        self.X_im_train = self.X_train[:, 99:199] # partie imaginaire
+
+
+
+
+        self.y_train_360 = augmentDataInterp(self.y_train,360)
+        self.y_test_360 = augmentDataInterp(self.y_test,360)
 
     def add_frequential_data(self):
         for signal in self.X:

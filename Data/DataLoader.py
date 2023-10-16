@@ -5,8 +5,8 @@ from Data.RadarDataSet import RadarDataSet
 
 class DataLoader:
     def __init__(self):
-        self.dataPath = "./Data/Data_Doa.csv"
-        self.dataLabelsPath = "./Data/Label_Doa.csv"
+        self.dataPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Data_Doa.csv"
+        self.dataLabelsPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Label_Doa.csv"
 
     def load_data(self):
         data = pd.read_csv(self.dataPath)
