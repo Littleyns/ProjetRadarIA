@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Data",
+    "\\Models",
+    "\\Models\\saved",
+    "\\Models\\saved\\basicCNNModel1",
+    "\\Models\\saved\\basicCNNModel4_moreData",
+    "\\Models\\saved\\basicNNModel1"
+  ],
+  "SelectedNode": "\\Models\\RNNmodel.py",
+  "PreviewInSolutionExplorer": false
+}
