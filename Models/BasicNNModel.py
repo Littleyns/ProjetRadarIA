@@ -73,7 +73,7 @@ class BasicNNModel:
         return self.model.predict(test_data)
 
     def load(self, name):
-        self.model = keras.models.load_model('C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Models/saved/'+name)
+        self.model = keras.models.load_model('C:/Users/HP/Desktop/rad/Models/saved/'+name)
 
 if __name__ == "__main__":
     data_loader = DataLoader()

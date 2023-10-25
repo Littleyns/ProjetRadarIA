@@ -37,7 +37,7 @@ class BasicAutoEncoder:
         dataComplex = data_to_complex(data)  # matrice (nombreDonnees, 2 ,100)
         return self.autoencoder.predict(dataComplex)
     def load(self, name):
-        self.autoencoder = tf.keras.models.load_model('C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Models/saved/' + name)
+        self.autoencoder = tf.keras.models.load_model('C:/Users/HP/Desktop/rad/Models/saved/' + name)
 
 
 if __name__ == "__main__":
