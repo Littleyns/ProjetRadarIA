@@ -82,8 +82,8 @@ if __name__ == "__main__":
     radar_dataset = RadarDataSet(data, labels, 0.05)
 
     trainer = BasicCNNModel.Trainer(radar_dataset.X_train.shape, 180)
-    history = trainer.train(radar_dataset.X_train, radar_dataset.y_train, epochs = 30, batch_size=10, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
+    history = trainer.train(radar_dataset.X_train, radar_dataset.y_train, epochs = 200, batch_size=15, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
     learningCurvePloter = LearningCurvesPlot()
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("basicCNNModel4_moreData")
+    trainer.saveModel("basicCNNModel4_temp")
 
