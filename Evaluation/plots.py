@@ -5,6 +5,14 @@ from Evaluation.Evaluateur import Evaluateur
 
 class PredictedStepPlot(Evaluateur):
     def evaluate(self, y_true, y_pred) -> None:
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.suptitle('Resultat attendu vs resultat prédit')
+        ax1.set_title("attendu")
+        ax1.step(np.arange(0, y_pred.shape[0], 1), y_true)
+        ax2.set_title("Predit")
+        ax2.step(np.arange(0, y_pred.shape[0], 1), y_pred, color="darkorange")
+        plt.figure()
+        plt.title("Cote à cote")
         plt.step(np.arange(0, y_pred.shape[0], 1),y_true)
         plt.step(np.arange(0, y_pred.shape[0], 1), y_pred)
 

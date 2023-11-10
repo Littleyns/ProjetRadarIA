@@ -1,9 +1,10 @@
 import random
-
+import os
 import tensorflow as tf
 from keras import Sequential, layers
 import keras
-
+from keras.layers.core import Dense
+from keras.layers.recurrent import SimpleRNN
 
 from Data.DataLoader import DataLoader
 from Data.RadarDataSet import RadarDataSet
@@ -21,15 +22,14 @@ class RNNModel:
             # Créez un modèle séquentiel
             self.model = Sequential()
 
-            self.model.add(SimpleRNN(units=64, input_shape=(sequence_length, 1))
-            self.model.add(Dense(units=1, activation='linear'))
+            self.model.add(SimpleRNN(units=64, input_shape=(input_shape, 1))
+            self.model.add(Dense(units=output_dim, activation='linear'))
 
             # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
              self.model.compile(loss='mean_squared_error', optimizer='adam')
 
             # Résumé du modèle
-            self.model.summary()
-            self.model = model;
+            self.model.summary();
 
 
 
@@ -60,7 +60,7 @@ class RNNModel:
         return self.model.predict(test_data)
 
     def load(self, name):
-        self.model = keras.models.load_model('C:/Users/HP/Desktop/rad/Models/saved/'+name)
+        self.model = keras.models.load_model(os.getcwd()+'/Models/saved/'+name)
 
 if __name__ == "__main__":
 

@@ -3,7 +3,7 @@ import random
 import tensorflow as tf
 from keras import Sequential, layers
 import keras
-
+import os
 
 from Data.DataLoader import DataLoader
 from Data.RadarDataSet import RadarDataSet
@@ -73,7 +73,7 @@ class BasicCNNModel:
         return self.model.predict(test_data)
 
     def load(self, name):
-        self.model = keras.models.load_model('C:/Users/HP/Desktop/rad/Models/saved/'+name)
+        self.model = keras.models.load_model(os.getcwd()+'/Models/saved/'+name)
 
 if __name__ == "__main__":
 

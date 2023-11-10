@@ -6,7 +6,7 @@ from tensorflow.keras.models import Model
 from Data.DataLoader import DataLoader
 from Data.RadarDataSet import RadarDataSet
 from PreProcessing.utils import data_to_complex
-
+import os
 
 class BasicAutoEncoder:
     def __init__(self, model = None):
@@ -37,7 +37,7 @@ class BasicAutoEncoder:
         dataComplex = data_to_complex(data)  # matrice (nombreDonnees, 2 ,100)
         return self.autoencoder.predict(dataComplex)
     def load(self, name):
-        self.autoencoder = tf.keras.models.load_model('C:/Users/HP/Desktop/rad/Models/saved/' + name)
+        self.autoencoder = tf.keras.models.load_model(os.getcwd()+'/Models/saved/'+name)
 
 
 if __name__ == "__main__":

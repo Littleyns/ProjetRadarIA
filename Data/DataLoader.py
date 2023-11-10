@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
+import os
 from Data.RadarDataSet import RadarDataSet
 
 
 class DataLoader:
     def __init__(self):
-        self.dataPath = "C:/Users/HP/Desktop/rad/Data/Data_Doa.csv"
-        self.dataLabelsPath = "C:/Users/HP/Desktop/rad/Data/Label_Doa.csv"
+        self.dataPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Data_Doa.csv"
+        self.dataLabelsPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Label_Doa.csv"
 
     def load_data(self):
         data = pd.read_csv(self.dataPath)
