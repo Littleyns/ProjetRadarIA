@@ -1,5 +1,10 @@
-import numpy as np
-from scipy.fft import fft, ifft
+from utils import get_mode_calcul
+
+if get_mode_calcul() == "gpu":
+    import cupy as np
+else:
+    import numpy as np
+
 
 
 def matched_filter(rxsig, h):
@@ -20,11 +25,11 @@ def matched_filter(rxsig, h):
     nsamp = h.shape[1]
 
     if l > 1:
-        rxsig = fft(rxsig, nsamp, axis=1)
+        rxsig = np.fft.fft(rxsig, nsamp, axis=1)
         h = np.tile(h, (l, 1))
-        sig_pulse = ifft(rxsig * h, axis=1)
+        sig_pulse = np.fft.ifft(rxsig * h, axis=1)
     else:
-        rxsig = fft(rxsig, nsamp)
-        sig_pulse = ifft(rxsig * h)
+        rxsig = np.fft.fft(rxsig, nsamp)
+        sig_pulse = np.fft.ifft(rxsig * h)
 
     return sig_pulse

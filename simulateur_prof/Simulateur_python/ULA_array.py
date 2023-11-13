@@ -1,4 +1,11 @@
-import numpy as np
+from utils import get_mode_calcul
+
+
+if get_mode_calcul() == "gpu":
+    import cupy as np
+else:
+    import numpy as np
+
 from scipy.signal import hamming, kaiser, blackman
 
 

@@ -1,5 +1,10 @@
-import numpy as np
+from utils import get_mode_calcul
 
+
+if get_mode_calcul() == "gpu":
+    import cupy as np
+else:
+    import numpy as np
 
 def win_gen(window, N, *args):
     """

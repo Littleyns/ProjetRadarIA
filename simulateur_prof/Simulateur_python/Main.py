@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import c
 from scipy.signal import windows
@@ -12,9 +11,10 @@ from os import environ
 from concurrent.futures import ThreadPoolExecutor
 import time
 import chainer
-from scipy.fft import fft, ifft
 
-np.set_printoptions(precision=15)
+
+from utils import get_mode_calcul
+
 chainer.print_runtime_info()
 # Enregistrez le temps de début
 start_time = time.time()
@@ -22,7 +22,13 @@ executor = ThreadPoolExecutor()
 # report the number of worker threads chosen by default
 print(executor._max_workers)
 environ["OMP_NUM_THREADS"] = str(executor._max_workers)
-
+MODE_CALCUL = get_mode_calcul()
+print("MODE_CALCUL: "+MODE_CALCUL)
+if MODE_CALCUL == "gpu":
+    import cupy as np
+    import numpy as nump
+else:
+    import numpy as np
 
 def receive_array(x, N, d, theta):
     A = ula_array(N, d, theta)
@@ -87,11 +93,14 @@ def radar_get_matched_filter(waveform, win_type=1):
     win = win.reshape(1, -1)
 
     mfcoeff = np.conj(np.fliplr(x))
-    mfcoeff = win * mfcoeff
+    if(MODE_CALCUL == "gpu"):
+        mfcoeff = np.array(win)* mfcoeff
+    else:
+        mfcoeff = win * mfcoeff
 
     # Attention padding
     tmp = np.concatenate([np.zeros((1, nsamp - x.shape[1])), mfcoeff], axis=1)
-    H = fft(tmp, nsamp, axis=1)
+    H = np.fft.fft(tmp, nsamp, axis=1)
     return mfcoeff, H, win
 
 
@@ -156,9 +165,14 @@ for j, dtheta in enumerate(Dtheta):
         label[:, i] = ((theta == doa1) + (theta == doa2)).astype(int)
 
 # Affichage des résultats
-thetaM = np.arange(-90, 91, 0.1)
-Pmusic, EN = music_doa(Rxx, thetaM, M)
 
+thetaM = nump.arange(-90, 91, 0.1)
+Pmusic, EN = music_doa(Rxx, thetaM, M)
+if(MODE_CALCUL == "gpu"):
+    Pmusic = Pmusic.get()
+    Pmusiclog10 = nump.log10(Pmusic)
+else:
+    Pmusiclog10 = np.log10(Pmusic)
 end_time = time.time()
 
 # Calculez la durée totale
@@ -167,7 +181,8 @@ execution_time = end_time - start_time
 print(f"Le code a pris {execution_time} secondes pour s'exécuter.")
 
 plt.figure()
-plt.plot(thetaM, 10 * np.log10(Pmusic))
+
+plt.plot(thetaM, 10 * Pmusiclog10)
 plt.grid(True)
 plt.title("DOAs cibles")
 plt.xlabel("DOA (degree)")
