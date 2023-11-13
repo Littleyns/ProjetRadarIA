@@ -23,12 +23,13 @@ executor = ThreadPoolExecutor()
 print(executor._max_workers)
 environ["OMP_NUM_THREADS"] = str(executor._max_workers)
 MODE_CALCUL = get_mode_calcul()
-print("MODE_CALCUL: "+MODE_CALCUL)
+print("MODE_CALCUL: " + MODE_CALCUL)
 if MODE_CALCUL == "gpu":
     import cupy as np
     import numpy as nump
 else:
     import numpy as np
+
 
 def receive_array(x, N, d, theta):
     A = ula_array(N, d, theta)
@@ -93,8 +94,8 @@ def radar_get_matched_filter(waveform, win_type=1):
     win = win.reshape(1, -1)
 
     mfcoeff = np.conj(np.fliplr(x))
-    if(MODE_CALCUL == "gpu"):
-        mfcoeff = np.array(win)* mfcoeff
+    if MODE_CALCUL == "gpu":
+        mfcoeff = np.array(win) * mfcoeff
     else:
         mfcoeff = win * mfcoeff
 
@@ -140,7 +141,7 @@ sigPower = np.sqrt(sigPower[0] / sigPower[1:])[0]
 temporaryVar1 = txSig_chan[1:, :]
 txSig_chan[1:, :] *= sigPower
 
-Dtheta = np.array([2, 4 , 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+Dtheta = np.array([2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
 theta = np.arange(-90, 91, 1)
 Dataset_X = pd.DataFrame()
 Dataset_y = pd.DataFrame()
@@ -161,19 +162,25 @@ for j, dtheta in enumerate(Dtheta):
         sigNoise = awgn_noise(sig_rx, SNR)
 
         # Compression
-        X = matched_filter(sig_rx, H)  # replace sig_rx by sigNoise
+        X = matched_filter(sigNoise, H)  # replace sig_rx by sigNoise
         # Matrice de corrélation
         Rxx = (1 / X.shape[1]) * np.dot(X, X.conj().T)
         data = np.concatenate([Rxx.real.flatten(), Rxx.imag.flatten()]).reshape(1, -1)
         label = ((theta == doa1) + (theta == doa2)).astype(int).reshape(1, -1)
 
-        Dataset_X = pd.concat([Dataset_X, (data, pd.DataFrame(data.get()))[MODE_CALCUL=="gpu"]], ignore_index=True)
-        Dataset_y = pd.concat([Dataset_y, (label, pd.DataFrame(label.get()))[MODE_CALCUL=="gpu"]], ignore_index=True)
+        Dataset_X = pd.concat(
+            [Dataset_X, (data, pd.DataFrame(data.get()))[MODE_CALCUL == "gpu"]],
+            ignore_index=True,
+        )
+        Dataset_y = pd.concat(
+            [Dataset_y, (label, pd.DataFrame(label.get()))[MODE_CALCUL == "gpu"]],
+            ignore_index=True,
+        )
 # Affichage des résultats
 
 thetaM = nump.arange(-90, 91, 0.1)
 Pmusic, EN = music_doa(Rxx, thetaM, M)
-if(MODE_CALCUL == "gpu"):
+if MODE_CALCUL == "gpu":
     Pmusic = Pmusic.get()
     Pmusiclog10 = nump.log10(Pmusic)
 else:

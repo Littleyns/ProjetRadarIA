@@ -68,7 +68,7 @@ for j = 1:length(Dtheta)
         sigNoise = awgnNoise(sig_Rx,SNR);
         
         %% Compression
-        X = MatchedFilter(sig_Rx,H);
+        X = MatchedFilter(sigNoise,H);
         
         %% Correlation Matrix
         Rxx = (1/length(X))*(X*X');
