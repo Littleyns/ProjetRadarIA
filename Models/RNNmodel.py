@@ -3,16 +3,13 @@ import os
 import tensorflow as tf
 from keras import Sequential, layers
 import keras
-from keras.layers.core import Dense
-from keras.layers.recurrent import SimpleRNN
-
 from Data.DataLoader import DataLoader
 from Data.RadarDataSet import RadarDataSet
 from Evaluation.plots import PredictedStepPlot, LearningCurvesPlot
 from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur
 from sklearn.preprocessing import StandardScaler
 from Models.BasicAutoEncoder import BasicAutoEncoder
-
+import numpy as np
 
 class RNNModel:
     def __init__(self, model = None):
@@ -22,14 +19,15 @@ class RNNModel:
             # Créez un modèle séquentiel
             self.model = Sequential()
 
-            self.model.add(SimpleRNN(units=64, input_shape=(input_shape, 1))
-            self.model.add(Dense(units=output_dim, activation='linear'))
-
-            # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
-             self.model.compile(loss='mean_squared_error', optimizer='adam')
+            self.model.add(layers.ConvLSTM1D(filters=64, kernel_size=(1), input_shape=(1, input_shape[1], 1)))
+            self.model.add(layers.Flatten())
+            self.model.add(layers.Dense(output_dim))
+            self.model.compile(optimizer='adam',
+                          loss='binary_crossentropy',
+                          metrics=['accuracy','mae', 'mse'])
 
             # Résumé du modèle
-            self.model.summary();
+            self.model.summary()
 
 
 
@@ -37,8 +35,8 @@ class RNNModel:
 
         def train(self, X_train, y_train, epochs = 30, batch_size = 10, validation_data = None):
             # Entraînez le modèle avec vos données d'entraînement et vos étiquettes
-            self.X_train = X_train
-            history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=validation_data)
+            self.X_train = X_train.reshape(X_train.shape[0],1,X_train.shape[1],1)
+            history = self.model.fit(self.X_train, y_train, epochs=epochs, batch_size=batch_size)#, validation_data=validation_data)
             # Affichez un résumé du modèle
             self.model.summary()
             return history
@@ -69,8 +67,8 @@ if __name__ == "__main__":
     radar_dataset = RadarDataSet(data, labels, 0.05)
 
     trainer = RNNModel.Trainer(radar_dataset.X_train.shape, 180)
-    history = trainer.train(radar_dataset.X_train, radar_dataset.y_train, epochs = 30, batch_size=10, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
+    history = trainer.train(radar_dataset.X_train, radar_dataset.y_train, epochs = 30, batch_size=10)#, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
     learningCurvePloter = LearningCurvesPlot()
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("RNNModel4_moreData")
+    trainer.saveModel("RNNModel1")
 

@@ -1,6 +1,5 @@
 clc;
 clear;
-cls
 
 %%
 chem = [pwd '\Library'];

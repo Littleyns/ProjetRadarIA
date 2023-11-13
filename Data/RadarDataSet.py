@@ -4,13 +4,13 @@ from PreProcessing.domaines.passage_freq import get_signal_frequentiel
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from scipy.interpolate import interp1d
-
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from PreProcessing.utils import augmentDataInterp
 
 
 class RadarDataSet:
-    def __init__(self, data, labels, test_size):
-        scaler = StandardScaler()
+    def __init__(self, data, labels, test_size, scaler=StandardScaler()):
+        self.scaler = scaler
         self.X = data
         self.y = labels
         self.test_size = test_size

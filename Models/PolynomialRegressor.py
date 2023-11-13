@@ -6,7 +6,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from Data.RadarDataSet import RadarDataSet
 from Evaluation.plots import PredictedStepPlot
 
-from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur
+from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur, R2Score
 
 
 class PolynomialRegressor:
@@ -26,6 +26,7 @@ class PolynomialRegressor:
 
         MSEEvaluateur().evaluate(y_test, y_predicted)
         RMSEEvaluateur().evaluate(y_test, y_predicted)
+        R2Score().evaluate(y_test, y_predicted)
 
         randomTestIndex = random.randint(0,len(y_predicted))
         PredictedStepPlot().evaluate(y_test[randomTestIndex], y_predicted[randomTestIndex])

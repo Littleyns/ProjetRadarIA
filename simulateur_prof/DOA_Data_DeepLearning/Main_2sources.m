@@ -48,7 +48,7 @@ sigPower = sqrt(sigPower(1)./sigPower(2:end));
 txSig_chan(2:end,:) = sigPower.*txSig_chan(2:end,:);
 
 %%
-Dtheta = [2 4 6 8 10 12 14 16 18 20 22 24];
+Dtheta = [2];% 4 6 8 10 12 14 16 18 20 22 24];
 theta = -90:1:90;
 
 for j = 1:length(Dtheta)
@@ -68,15 +68,15 @@ for j = 1:length(Dtheta)
         sigNoise = awgnNoise(sig_Rx,SNR);
         
         %% Compression
-        X = MatchedFilter(sigNoise,H);
+        X = MatchedFilter(sig_Rx,H);
         
         %% Correlation Matrix
         Rxx = (1/length(X))*(X*X');
         data(:,i) = [real(Rxx(:)); imag(Rxx(:))];
         label(:,i) = double(theta == doa1)' + double(theta == doa2)';
     end
-%     writematrix(data,['DataDoa2_' num2str(Dtheta(j)) '_' num2str(SNR) '.csv']);
-%     writematrix(label,['LabelDoa2_' num2str(Dtheta(j)) '_' num2str(SNR) '.csv']);
+     writematrix(data,['DataDoa2_' num2str(Dtheta(j)) '_' num2str(SNR) '.csv']);
+     writematrix(label,['LabelDoa2_' num2str(Dtheta(j)) '_' num2str(SNR) '.csv']);
 
 end
 
@@ -206,6 +206,5 @@ mfcoeff = win.*mfcoeff;
 tmp = [zeros(1,nsamp-length(x)) mfcoeff];
 H = fft(tmp,nsamp);
 
-%%
 
 end

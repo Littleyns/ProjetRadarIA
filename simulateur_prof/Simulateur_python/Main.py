@@ -136,7 +136,9 @@ theta = np.arange(-90, 91, 1)
 
 
 for j, dtheta in enumerate(Dtheta):
-    theta1 = np.arange(-60, 61 - dtheta, 1)
+    theta1 = np.arange(
+        -60, 61 - dtheta, 1
+    )  # Redemander au prof l'explication de cette partie Dtheta
     theta2 = theta1 + dtheta
 
     data = np.zeros((200, len(theta1)))
