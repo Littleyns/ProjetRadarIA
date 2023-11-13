@@ -11,7 +11,7 @@ from os import environ
 from concurrent.futures import ThreadPoolExecutor
 import time
 import chainer
-
+import pandas as pd
 
 from utils import get_mode_calcul
 
@@ -140,9 +140,10 @@ sigPower = np.sqrt(sigPower[0] / sigPower[1:])[0]
 temporaryVar1 = txSig_chan[1:, :]
 txSig_chan[1:, :] *= sigPower
 
-Dtheta = np.array([2])  # , 4 , 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+Dtheta = np.array([2, 4 , 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
 theta = np.arange(-90, 91, 1)
-
+Dataset_X = pd.DataFrame()
+Dataset_y = pd.DataFrame()
 
 for j, dtheta in enumerate(Dtheta):
     theta1 = np.arange(-60, 61 - dtheta, 1)
@@ -161,9 +162,11 @@ for j, dtheta in enumerate(Dtheta):
         X = matched_filter(sig_rx, H)  # replace sig_rx by sigNoise
         # Matrice de corrélation
         Rxx = (1 / X.shape[1]) * np.dot(X, X.conj().T)
-        data[:, i] = np.concatenate([Rxx.real.flatten(), Rxx.imag.flatten()])
-        label[:, i] = ((theta == doa1) + (theta == doa2)).astype(int)
+        data = np.concatenate([Rxx.real.flatten(), Rxx.imag.flatten()]).reshape(1, -1)
+        label = ((theta == doa1) + (theta == doa2)).astype(int).reshape(1, -1)
 
+        Dataset_X = pd.concat([Dataset_X, (data, pd.DataFrame(data.get()))[MODE_CALCUL=="gpu"]], ignore_index=True)
+        Dataset_y = pd.concat([Dataset_y, (label, pd.DataFrame(label.get()))[MODE_CALCUL=="gpu"]], ignore_index=True)
 # Affichage des résultats
 
 thetaM = nump.arange(-90, 91, 0.1)
