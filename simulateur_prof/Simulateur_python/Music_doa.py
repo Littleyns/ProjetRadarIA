@@ -1,5 +1,10 @@
 import numpy as np
 
+from utils import get_mode_calcul
+if get_mode_calcul() == "gpu":
+    import cupy as np
+else:
+    import numpy as np
 
 def music_doa(Rxx, theta, M):
     """
@@ -16,8 +21,10 @@ def music_doa(Rxx, theta, M):
     """
 
     # Décomposition en vecteurs singuliers
-    Dia, V = np.linalg.eig(Rxx)
-
+    if(get_mode_calcul() == "gpu"):
+        Dia, V = np.linalg.eigh(Rxx)
+    else:
+        Dia, V = np.linalg.eig(Rxx)
     # Trie des valeurs propres par ordre croissant
     Index = np.argsort(Dia)
 
