@@ -153,7 +153,7 @@ for j, dtheta in enumerate(Dtheta):
     theta2 = theta1 + dtheta
 
     data = np.zeros((200, len(theta1)))
-    label = np.zeros((181, len(theta1)))
+    label = np.zeros((180, len(theta1)))
     for i, (doa1, doa2) in enumerate(zip(theta1, theta2)):
         doa = np.array([doa1, doa2])
 
