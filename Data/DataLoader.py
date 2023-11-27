@@ -26,3 +26,12 @@ class DataLoader:
 if __name__ == "__main__":
     data = pd.read_csv("Dataset_X6687.csv", index_col=False)
     labels = pd.read_csv("Dataset_y6687.csv", index_col=False)
+
+
+#data1=reel data2=img
+#alt
+#result = np.vstack((row1, row2) for row1, row2 in zip(data1, data2))
+
+#matrice2
+#merged_data = np.array([np.concatenate((row1, row2)) for row1, row2 in zip(data1, data2)])
+#result1 = merged_data.reshape(data1.shape[0], -1, data1.shape[1])
