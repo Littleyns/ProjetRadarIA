@@ -1,26 +1,28 @@
 import pandas as pd
 import numpy as np
-import os
-from Data.RadarDataSet import RadarDataSet
-
 
 class DataLoader:
     def __init__(self):
-        self.dataPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Data_Doa.csv"
-        self.dataLabelsPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Label_Doa.csv"
+        self.dataPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X6687.csv"
+        self.dataLabelsPath = (
+            "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y6687.csv"
+        )
 
     def load_data(self):
-        data = pd.read_csv(self.dataPath)
-        labels = pd.read_csv(self.dataLabelsPath)
+        data = pd.read_csv(self.dataPath, index_col=False)
+        labels = pd.read_csv(self.dataLabelsPath, index_col=False)
 
-        data = np.array(data).transpose()
-        labels = np.array(labels).transpose()
-        #loaded_data = []
-        #for i in range(data.shape[1]):
+        data = np.array(data)#.transpose()
+        labels = np.array(labels)#.transpose()
+        # loaded_data = []
+        # for i in range(data.shape[1]):
         #    loaded_data += RadarData.RadarData(data.iloc[:, [i]], labels.iloc[:, [i]]),
-        #adar_dataset = RadarDataSet(data, labels, loaded_data)
+        # adar_dataset = RadarDataSet(data, labels, loaded_data)
 
         return data, labels
 
-
     # Ajoutez d'autres méthodes de gestion des données
+
+if __name__ == "__main__":
+    data = pd.read_csv("Dataset_X6687.csv", index_col=False)
+    labels = pd.read_csv("Dataset_y6687.csv", index_col=False)

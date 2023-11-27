@@ -1,5 +1,7 @@
 from sklearn.model_selection import train_test_split
 import numpy as np
+
+from Models.BasicAutoEncoder import BasicAutoEncoder
 from PreProcessing.domaines.passage_freq import get_signal_frequentiel
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
@@ -15,45 +17,60 @@ class RadarDataSet:
         self.y = labels
         self.test_size = test_size
 
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            data, labels, test_size=test_size, random_state=42
+        )
+        (
+            self.X_validation,
+            self.X_test,
+            self.y_validation,
+            self.y_test,
+        ) = train_test_split(self.X_test, self.y_test, test_size=0.5, random_state=42)
 
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(data, labels, test_size=test_size, random_state=42)
+        # mise à l'echelle
         self.X_train = scaler.fit_transform(self.X_train)
         self.X_test = scaler.fit_transform(self.X_test)
+        self.X_validation = scaler.fit_transform(self.X_validation)
+
         self.X_freq_train = []
         self.X_freq_test = []
         self.X_freq = []
 
-        self.X_real_train = self.X_train[:, :100] # partie reelle
-        self.X_im_train = self.X_train[:, 99:199] # partie imaginaire
+        self.X_real_train = self.X_train[:, :100]  # partie reelle
+        self.X_im_train = self.X_train[:, 100:]  # partie imaginaire
 
-
-
-
-        self.y_train_360 = augmentDataInterp(self.y_train,360)
-        self.y_test_360 = augmentDataInterp(self.y_test,360)
+        self.y_train_360 = augmentDataInterp(self.y_train, 360)
+        self.y_test_360 = augmentDataInterp(self.y_test, 360)
 
     def add_frequential_data(self):
         for signal in self.X:
-            self.X_freq += get_signal_frequentiel(signal),
+            self.X_freq += (get_signal_frequentiel(signal),)
         self.X_freq = np.array(self.X_freq)
-        self.X_freq_train, self.X_freq_test, empty1, empty2 = train_test_split(self.X_freq, self.y, test_size=self.test_size, random_state=42)
+        self.X_freq_train, self.X_freq_test, empty1, empty2 = train_test_split(
+            self.X_freq, self.y, test_size=self.test_size, random_state=42
+        )
+
+    def load_Rxx(self):
+        self.Rxx_train = recreate_rxx_abs(self.X_train)
+        self.Rxx_test = recreate_rxx_abs(self.X_test)
+        self.Rxx_validation = recreate_rxx_abs(self.X_validation)
 
 
-    def plot(self, index ):
+    def plot(self, index):
         plt.figure(figsize=(10, 6))
-        plt.plot(self.X[index], label='Signal')  # Tracez le signal
+        plt.plot(self.X[index], label="Signal")  # Tracez le signal
         # Ajoutez des titres et des légendes
-        plt.title('Tracé du signal')
-        plt.xlabel('Temps')
-        plt.ylabel('Amplitude')
+        plt.title("Tracé du signal")
+        plt.xlabel("Temps")
+        plt.ylabel("Amplitude")
         plt.legend()
 
         plt.figure(figsize=(10, 6))
         plt.step(np.arange(0, self.y[index].shape[0], 1), self.y[index])
-        plt.title('Label du signal (position objet)')
-        plt.xlabel('Angle')
+        plt.title("Label du signal (position objet)")
+        plt.xlabel("Angle")
 
-        if (len(self.X_freq) != 0 and type(self.X_freq[index])!=type(None)):
+        if len(self.X_freq) != 0 and type(self.X_freq[index]) != type(None):
             plt.figure(figsize=(10, 6))
             frequence = np.fft.fftfreq(self.X_freq[index].shape[0])
             plt.plot(frequence, np.abs(self.X_freq[index]))
@@ -64,3 +81,9 @@ class RadarDataSet:
 
         # Affichez le graphique
         plt.show()
+
+def recreate_rxx_abs(data):
+    real_part = data[:, : data.shape[1] // 2].reshape(-1, 10, 10)
+    imag_part = data[:, data.shape[1] // 2:].reshape(-1, 10, 10)
+    return np.abs(real_part + 1j * imag_part)
+

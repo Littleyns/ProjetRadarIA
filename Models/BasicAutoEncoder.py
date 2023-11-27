@@ -3,8 +3,6 @@ import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras.models import Model
 
-from Data.DataLoader import DataLoader
-from Data.RadarDataSet import RadarDataSet
 from PreProcessing.utils import data_to_complex
 import os
 
@@ -30,7 +28,7 @@ class BasicAutoEncoder:
         def train(self, X_train):
             dataComplex = data_to_complex(X_train) #matrice (nombreDonnees, 2 ,100)
 
-            self.autoencoder.fit(dataComplex, dataComplex, epochs=70, batch_size=2)
+            self.autoencoder.fit(dataComplex, dataComplex, epochs=70, batch_size=10)
         def saveModel(self, name):
             self.autoencoder.save("./saved/"+name)
     def encode(self, data):
@@ -40,11 +38,3 @@ class BasicAutoEncoder:
         self.autoencoder = tf.keras.models.load_model(os.getcwd()+'/Models/saved/'+name)
 
 
-if __name__ == "__main__":
-    data_loader = DataLoader()
-    data, labels = data_loader.load_data()
-    radar_dataset = RadarDataSet(data, labels, 0.1)
-
-    basicAutoEncoderTrainer = BasicAutoEncoder.Trainer((2, 100), 10)
-    basicAutoEncoderTrainer.train(radar_dataset.X_train)
-    basicAutoEncoderTrainer.saveModel("basicAutoEncoder")
