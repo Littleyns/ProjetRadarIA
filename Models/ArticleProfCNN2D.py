@@ -102,7 +102,7 @@ class ArticleProfCNN2D:
 
 
 if __name__ == "__main__":
-    data_loader = DataLoader()
+    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X6687.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y6687.csv")
     data, labels = data_loader.load_data()
     radar_dataset = RadarDataSet(data, labels, 0.3)
     radar_dataset.load_Rxx()

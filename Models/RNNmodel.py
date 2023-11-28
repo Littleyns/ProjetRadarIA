@@ -18,8 +18,8 @@ class RNNModel:
         def __init__(self, input_shape, output_dim):
             # Créez un modèle séquentiel
             self.model = Sequential()
-
-            self.model.add(layers.ConvLSTM1D(filters=64, kernel_size=(1), input_shape=(1, input_shape[1], 1)))
+            model.add(layers.InputLayer(input_shape=(1, input_shape[1], 1)))
+            self.model.add(layers.ConvLSTM1D(filters=64, kernel_size=(1)))
             self.model.add(layers.Flatten())
             self.model.add(layers.Dense(output_dim))
             self.model.compile(optimizer='adam',
@@ -62,7 +62,7 @@ class RNNModel:
 
 if __name__ == "__main__":
 
-    data_loader = DataLoader()
+    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X6687.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y6687.csv")
     data, labels = data_loader.load_data()
     radar_dataset = RadarDataSet(data, labels, 0.05)
 

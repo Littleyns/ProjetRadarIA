@@ -2,11 +2,9 @@ import pandas as pd
 import numpy as np
 
 class DataLoader:
-    def __init__(self):
-        self.dataPath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X6687.csv"
-        self.dataLabelsPath = (
-            "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y6687.csv"
-        )
+    def __init__(self, datapath ,labelpath):
+        self.dataPath = datapath
+        self.dataLabelsPath = labelpath
 
     def load_data(self):
         data = pd.read_csv(self.dataPath, index_col=False)
