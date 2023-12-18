@@ -3,11 +3,12 @@
     "",
     "\\Data",
     "\\Models",
-    "\\Models\\saved",
-    "\\Models\\saved\\basicCNNModel1",
-    "\\Models\\saved\\basicCNNModel4_moreData",
-    "\\Models\\saved\\basicNNModel1"
+    "\\PreProcessing",
+    "\\PreProcessing\\domaines",
+    "\\PreProcessing\\filtrage",
+    "\\radarsimpy",
+    "\\simulateur_prof"
   ],
-  "SelectedNode": "\\Data\\DataLoader.py",
+  "SelectedNode": "\\Data\\RadarDataSet.py",
   "PreviewInSolutionExplorer": false
 }
