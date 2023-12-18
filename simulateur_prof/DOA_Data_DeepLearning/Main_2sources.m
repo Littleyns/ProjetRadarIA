@@ -6,16 +6,16 @@ chem = [pwd '\Library'];
 addpath(chem);
 
 %% Param√®tres du syst√®me
-fc = 2.725e9;       % fr√©quence centrale (Hz)
+fc = 2.725e9;       % frÈquence centrale (Hz)
 BW = 10e6;          % Largeur de bande (Hz)
 
-Te = 1.4*1e-3;      % Dur√©e de modulation (s) (Pulse width)
-T = 4.1*1e-3;       % P√©riode de r√©p√©tition des impulsions (s)
+Te = 1.4*1e-3;      % DurÈe de modulation (s) (Pulse width)
+T = 4.1*1e-3;       % PÈriode de rÈpÈtition des impulsions (s)
 
-fs = 4*BW;          % Fr√©quence d'√©chantillonnage (Hz)
+fs = 4*BW;          % FrÈquence d'Èchantillonnage (Hz)
 Ts = 1/fs; 
 
-c = physconst('lightspeed');    % Vitesse de la lumi√®re (m/s)
+c = physconst('lightspeed');    % Vitesse de la lumiËre (m/s)
 lambda = c/fc;                  % Longueur d'onde du radar (m)
 
 
