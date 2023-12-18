@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import mean_squared_error, f1_score
+import pandas as pd
 from Evaluation.Evaluateur import Evaluateur
 
 
@@ -39,4 +41,28 @@ class LearningCurvesPlot(Evaluateur):
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
 
+        plt.show()
+
+class ErrorOfSNRPlot(Evaluateur):
+    def evaluate(self, snr_values, y_true, y_pred, errorFunc = 'mean_squared_error'):
+
+        df = pd.DataFrame({'SNR': snr_values, 'y_true': list(y_true), 'y_pred': list(y_pred)})
+
+        # Calculez le RMSE pour chaque groupe de SNR
+        if(errorFunc == 'mean_squared_error'):
+            rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
+                mean_squared_error(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
+        else:
+            rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
+                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
+
+        # Créez le diagramme à barres
+        plt.plot(rmse_values.index, rmse_values, color='blue')
+
+        # Ajoutez des étiquettes et un titre
+        plt.xlabel('SNR')
+        plt.ylabel('score/error')
+        plt.title('score/error par SNR')
+
+        # Affichez le diagramme
         plt.show()

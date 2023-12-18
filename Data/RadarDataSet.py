@@ -11,14 +11,14 @@ from PreProcessing.utils import augmentDataInterp
 
 
 class RadarDataSet:
-    def __init__(self, data, labels, test_size, scaler=StandardScaler()):
+    def __init__(self, data, labels, test_size, scaler=StandardScaler(), appended_snr=False):
         self.scaler = scaler
         self.X = data
         self.y = labels
         self.test_size = test_size
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            data, labels, test_size=test_size, random_state=42
+            self.X, self.y, test_size=test_size, random_state=42
         )
         (
             self.X_validation,
@@ -26,6 +26,15 @@ class RadarDataSet:
             self.y_validation,
             self.y_test,
         ) = train_test_split(self.X_test, self.y_test, test_size=0.5, random_state=42)
+
+        #Séparation du SNR
+        if appended_snr:
+            self.snr_y_test = self.y_test[:,-1]
+            self.snr_y_train =self.y_train[:,-1]
+            self.snr_y_validation = self.y_validation[:,-1]
+            self.y_test = self.y_test[:,:-1]
+            self.y_train =self.y_train[:,:-1]
+            self.y_validation = self.y_validation[:,:-1]
 
         # mise à l'echelle
         self.X_train = scaler.fit_transform(self.X_train)
@@ -87,3 +96,12 @@ def recreate_rxx_abs(data):
     imag_part = data[:, data.shape[1] // 2:].reshape(-1, 10, 10)
     return np.abs(real_part + 1j * imag_part)
 
+def merged_data_format(data):
+    # data1=reel data2=img
+    # alt
+    # result = np.vstack((row1, row2) for row1, row2 in zip(data1, data2))
+
+    # matrice2
+    # merged_data = np.array([np.concatenate((row1, row2)) for row1, row2 in zip(data1, data2)])
+    # result1 = merged_data.reshape(data1.shape[0], -1, data1.shape[1])
+    pass;

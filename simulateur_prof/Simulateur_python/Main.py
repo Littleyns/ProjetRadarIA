@@ -157,7 +157,7 @@ mf_coeff, H, winTemp = radar_get_matched_filter(LFM)
 
 for i in range(1):
     # Canal radar en espace libre
-    SNR = 30 + random.randint(-10, 10)
+
 
     sigPower = np.sum(np.abs(txSig_chan) ** 2, axis=1) / txSig_chan.shape[1]
     sigPower = np.sqrt(sigPower[0] / sigPower[1:])[0]
@@ -177,6 +177,7 @@ for i in range(1):
         #data = np.zeros((200, len(theta1)))
         #label = np.zeros((180, len(theta1)))
         for i, (doa1, doa2) in enumerate(zip(theta1, theta2)):
+            SNR = 30 + random.randint(-10, 10)
             doa = np.array([doa1, doa2])
             Rxx, data, label = data_generation(doa, txSig_chan, N,d, SNR )
             if MODE_CALCUL == "gpu":
