@@ -18,38 +18,38 @@ class DocuCNNModel:
         self.model = model
 
     class Trainer:
+        def leaky_relu(x, alpha=0.01):
+            return tf.maximum(alpha * x, x)
         def __init__(self, input_shape, output_dim):
         # Define the Leaky ReLU activation function
-def leaky_relu(x, alpha=0.01):
-    return tf.maximum(alpha * x, x)
 
-# Define the CNN model
-def create_cnn_model():
+
+        # Define the CNN model
               # Créez un modèle séquentiel
             self.input_shape = input_shape
-            model = models.Sequential()
+            model = keras.Sequential()
 
-    # Convolutional layers
-    model.add(layers.Conv2D(32, (3, 3), activation=leaky_relu, input_shape=(height, width, channels), padding='same'))
-    model.add(layers.MaxPooling2D((2, 2)))
+            # Convolutional layers
+            model.add(layers.Conv2D(32, (3, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=(height, width, channels), padding='same'))
+            model.add(layers.MaxPooling2D((2, 2)))
 
-    model.add(layers.Conv2D(64, (3, 3), activation=leaky_relu, padding='same'))
-    model.add(layers.MaxPooling2D((2, 2)))
+            model.add(layers.Conv2D(64, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
+            model.add(layers.MaxPooling2D((2, 2)))
 
-    model.add(layers.Conv2D(128, (3, 3), activation=leaky_relu, padding='same'))
-    model.add(layers.MaxPooling2D((2, 2)))
+            model.add(layers.Conv2D(128, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
+            model.add(layers.MaxPooling2D((2, 2)))
 
-    # Flatten layer to transition from convolutional layers to fully connected layers
-    model.add(layers.Flatten())
+            # Flatten layer to transition from convolutional layers to fully connected layers
+            model.add(layers.Flatten())
 
-    # Fully connected layers
-    model.add(layers.Dense(1500, activation=leaky_relu))
-    model.add(layers.Dense(1500, activation=leaky_relu))
-    model.add(layers.Dense(1500, activation=leaky_relu))
-    model.add(layers.Dropout(0.5))  # Dropout layer to prevent overfitting
-    model.add(layers.Dense(1, activation='sigmoid'))  # Binary classification (sigmoid activation)
+            # Fully connected layers
+            model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
+            model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
+            model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
+            model.add(layers.Dropout(0.5))  # Dropout layer to prevent overfitting
+            model.add(layers.Dense(1, activation='sigmoid'))  # Binary classification (sigmoid activation)
 
-            # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
+                    # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
             model.compile(
                 optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
             )
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     data, labels = data_loader.load_data()
     radar_dataset = RadarDataSet(data, labels, 0.4)
 
-    trainer = BasicCNNModel.Trainer(radar_dataset.X_train.shape, 181)
+    trainer = DocuCNNModel.Trainer(radar_dataset.X_train.shape, 181)
     history = trainer.train(
         radar_dataset.X_train,
         radar_dataset.y_train,
@@ -118,12 +118,7 @@ if __name__ == "__main__":
     )
     learningCurvePloter = LearningCurvesPlot()
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("CNN80_bcross_b50_e30_sigmoid_adam")
-
-
-
-    import tensorflow as tf
-from tensorflow.keras import layers, models
+    trainer.saveModel("CNN15_bcross_b50_e30_sigmoid_adam")
 
 
 
