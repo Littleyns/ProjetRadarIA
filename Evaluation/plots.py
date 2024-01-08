@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import mean_squared_error, f1_score
+from sklearn.metrics import mean_squared_error, f1_score, log_loss, accuracy_score,roc_auc_score
 import pandas as pd
 from Evaluation.Evaluateur import Evaluateur
 
@@ -44,14 +44,17 @@ class LearningCurvesPlot(Evaluateur):
         plt.show()
 
 class ErrorOfSNRPlot(Evaluateur):
-    def evaluate(self, snr_values, y_true, y_pred, errorFunc = 'mean_squared_error'):
+    def evaluate(self, snr_values, y_true, y_pred, errorFunc = 'f1_score'):
 
         df = pd.DataFrame({'SNR': snr_values, 'y_true': list(y_true), 'y_pred': list(y_pred)})
 
         # Calculez le RMSE pour chaque groupe de SNR
-        if(errorFunc == 'mean_squared_error'):
+        if(errorFunc == 'accuracy_score'):
             rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
-                mean_squared_error(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
+                accuracy_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
+        elif errorFunc == 'roc_auc_score':
+            rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
+                roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
         else:
             rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
                 f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
@@ -61,7 +64,7 @@ class ErrorOfSNRPlot(Evaluateur):
 
         # Ajoutez des étiquettes et un titre
         plt.xlabel('SNR')
-        plt.ylabel('score/error')
+        plt.ylabel(errorFunc)
         plt.title('score/error par SNR')
 
         # Affichez le diagramme

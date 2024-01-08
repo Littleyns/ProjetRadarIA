@@ -17,6 +17,9 @@ class RadarDataSet:
         self.y = labels
         self.test_size = test_size
 
+        # mise à l'echelle
+        self.X = scaler.fit_transform(self.X)
+
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.X, self.y, test_size=test_size, random_state=42
         )
@@ -29,17 +32,18 @@ class RadarDataSet:
 
         #Séparation du SNR
         if appended_snr:
+
+            self.snr_y = self.y[:, -1]
             self.snr_y_test = self.y_test[:,-1]
             self.snr_y_train =self.y_train[:,-1]
             self.snr_y_validation = self.y_validation[:,-1]
+            self.y = self.y[:, :-1]
             self.y_test = self.y_test[:,:-1]
             self.y_train =self.y_train[:,:-1]
             self.y_validation = self.y_validation[:,:-1]
 
-        # mise à l'echelle
-        self.X_train = scaler.fit_transform(self.X_train)
-        self.X_test = scaler.fit_transform(self.X_test)
-        self.X_validation = scaler.fit_transform(self.X_validation)
+
+
 
         self.X_freq_train = []
         self.X_freq_test = []

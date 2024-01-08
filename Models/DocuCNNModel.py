@@ -11,6 +11,7 @@ from Evaluation.plots import PredictedStepPlot, LearningCurvesPlot
 from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur, R2Score, Accuracy
 from sklearn.preprocessing import StandardScaler
 from Models.BasicAutoEncoder import BasicAutoEncoder
+from PreProcessing.utils import data_to_complex
 
 
 class DocuCNNModel:
@@ -30,14 +31,14 @@ class DocuCNNModel:
             model = keras.Sequential()
 
             # Convolutional layers
-            model.add(layers.Conv2D(32, (3, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=(height, width, channels), padding='same'))
-            model.add(layers.MaxPooling2D((2, 2)))
+            model.add(layers.Conv2D(32, (3, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=(input_shape[1],input_shape[2],1), padding='same'))
+
 
             model.add(layers.Conv2D(64, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
-            model.add(layers.MaxPooling2D((2, 2)))
+
 
             model.add(layers.Conv2D(128, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
-            model.add(layers.MaxPooling2D((2, 2)))
+
 
             # Flatten layer to transition from convolutional layers to fully connected layers
             model.add(layers.Flatten())
@@ -47,7 +48,7 @@ class DocuCNNModel:
             model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
             model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
             model.add(layers.Dropout(0.5))  # Dropout layer to prevent overfitting
-            model.add(layers.Dense(1, activation='sigmoid'))  # Binary classification (sigmoid activation)
+            model.add(layers.Dense(output_dim, activation='sigmoid'))  # Binary classification (sigmoid activation)
 
                     # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
             model.compile(
@@ -89,12 +90,15 @@ class DocuCNNModel:
         )
 
         y_test_pred_binary = (y_predicted > threshold).astype(int)
-        print("LES METRIQUES SUIVANTES SONT CALCULEES APRES AVOIR TRANSFORMER LES DONNEES DE SORTIES EN SORTIES BINAIRE AVEC UN SEUIL DE "+str(threshold))
+        print("LES METRIQUES SUIVANTES SONT CALCULEES APRES  AVOIR TRANSFORMER LES DONNEES DE SORTIES EN SORTIES BINAIRE AVEC UN SEUIL DE "+str(threshold))
         MSEEvaluateur().evaluate(y_test_true, y_test_pred_binary)
         RMSEEvaluateur().evaluate(y_test_true, y_test_pred_binary)
         R2Score().evaluate(y_test_true, y_test_pred_binary)
         Accuracy().evaluate(y_test_true, y_test_pred_binary)
 
+    def evaluate_from_simulation(self, number_samples):
+        # Utiliser radarsimpy simulator
+        pass
     def predict(self, test_data):
         return self.model.predict(test_data)
 
@@ -103,22 +107,23 @@ class DocuCNNModel:
 
 
 if __name__ == "__main__":
-    data_loader = DataLoader("C:/Users/HP/Desktop/rad/Data/Dataset_X6687.csv","C:/Users/HP/Desktop/rad/Data/Dataset_y6687.csv")
+    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X5717_SNR.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y5717_SNR.csv")
     data, labels = data_loader.load_data()
-    radar_dataset = RadarDataSet(data, labels, 0.4)
+    radar_dataset = RadarDataSet(data, labels, 0.4, appended_snr=True)
 
-    trainer = DocuCNNModel.Trainer(radar_dataset.X_train.shape, 181)
+    print((data_to_complex(radar_dataset.X_train).shape))
+    trainer = DocuCNNModel.Trainer(data_to_complex(radar_dataset.X_train).shape, 181)
     history = trainer.train(
-        radar_dataset.X_train,
+        data_to_complex(radar_dataset.X_train),
         radar_dataset.y_train,
         epochs=30,
-        batch_size=50,
-        validation_data=(radar_dataset.X_validation, radar_dataset.y_validation),
+        batch_size=100,
+        validation_data=(data_to_complex(radar_dataset.X_validation), radar_dataset.y_validation),
 
     )
     learningCurvePloter = LearningCurvesPlot()
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("CNN15_bcross_b50_e30_sigmoid_adam")
+    trainer.saveModel("CNNzarrouk_bcross_b50_e30_sigmoid_adam")
 
 
 
