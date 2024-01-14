@@ -1,6 +1,5 @@
-import numpy as np
+from simulateur_prof.Simulateur_python.utils import get_mode_calcul
 
-from utils import get_mode_calcul
 if get_mode_calcul() == "gpu":
     import cupy as np
 else:

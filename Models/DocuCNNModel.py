@@ -4,16 +4,16 @@ import tensorflow as tf
 from keras import Sequential, layers
 import keras
 import os
-
+import numpy as np
 from Data.DataLoader import DataLoader
-from Data.RadarDataSet import RadarDataSet
+from Data.RadarDataSet import RadarDataSet, RealImaginaryRxxDataSet, RealImaginaryXDataSet
 from Evaluation.plots import PredictedStepPlot, LearningCurvesPlot
 from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur, R2Score, Accuracy
 from sklearn.preprocessing import StandardScaler
 from Models.BasicAutoEncoder import BasicAutoEncoder
 from PreProcessing.utils import data_to_complex
-
-
+import keras.backend as K
+from keras.backend import binary_crossentropy
 class DocuCNNModel:
     def __init__(self, model=None):
         self.model = model
@@ -21,6 +21,35 @@ class DocuCNNModel:
     class Trainer:
         def leaky_relu(x, alpha=0.01):
             return tf.maximum(alpha * x, x)
+        @staticmethod
+        def custom_loss(y_true, y_pred, threshold=0.4):
+            # Calculer la distance angulaire entre les prédictions et les vraies étiquettes
+            angular_distance = tf.abs(tf.math.subtract(y_pred, y_true))
+            print("----------------")
+            print(angular_distance)
+            # Appliquer la perte binaire habituelle
+            base_loss = binary_crossentropy(y_true, y_pred)
+
+            # Appliquer une pénalité pour les erreurs d'un degré
+            penalty = 0.5 * angular_distance
+            # Combiner la perte binaire et la pénalité
+            total_loss = base_loss + penalty
+
+            return total_loss
+
+        @staticmethod
+        def klDivergenceLoss(y_true,y_pred, alpha=0.1):
+                # Calculer la divergence de Kullback-Leibler
+            kl_divergence = tf.keras.losses.kullback_leibler_divergence(y_true, y_pred)
+            # Appliquer une pondération en fonction de la classe réelle
+            kl_divergence = tf.expand_dims(kl_divergence, axis=-1)
+            weighted_loss = tf.reduce_sum(kl_divergence * (1.0 - y_true), axis=1)
+
+            # Appliquer une pénalité moindre pour les erreurs proches de la classe réelle
+            total_loss = tf.reduce_mean(weighted_loss) + alpha * tf.reduce_mean(kl_divergence)
+
+            return total_loss
+
         def __init__(self, input_shape, output_dim):
         # Define the Leaky ReLU activation function
 
@@ -31,15 +60,16 @@ class DocuCNNModel:
             model = keras.Sequential()
 
             # Convolutional layers
-            model.add(layers.Conv2D(32, (3, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=(input_shape[1],input_shape[2],1), padding='same'))
+            model.add(layers.Conv2D(32, (2, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=input_shape, padding='same'))
 
 
-            model.add(layers.Conv2D(64, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
+            model.add(layers.Conv2D(64, (2, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
 
 
-            model.add(layers.Conv2D(128, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
+            model.add(layers.Conv2D(128, (2, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
 
-
+            #Max pooling 2d
+            #model.add(layers.MaxPooling2D(pool_size=(2, 2)))
             # Flatten layer to transition from convolutional layers to fully connected layers
             model.add(layers.Flatten())
 
@@ -52,7 +82,7 @@ class DocuCNNModel:
 
                     # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
             model.compile(
-                optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
+                optimizer='adam', loss="binary_crossentropy", metrics=[tf.keras.metrics.BinaryIoU(target_class_ids=[0, 1], threshold=0.4),tf.keras.metrics.BinaryIoU(target_class_ids=[0, 1], threshold=0.45)],run_eagerly=True
             )
 
             # Résumé du modèle
@@ -102,28 +132,33 @@ class DocuCNNModel:
     def predict(self, test_data):
         return self.model.predict(test_data)
 
-    def load(self, name):
-        self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name)
-
+    def load(self, name, custom_loss=False):
+        if custom_loss==False:
+            self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name)
+        else:
+            self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name, custom_objects={custom_loss: self.Trainer.custom_loss})
 
 if __name__ == "__main__":
-    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X5717_SNR.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y5717_SNR.csv")
+    absolutePath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/"
+    data_loader = DataLoader([absolutePath +"Dataset_X7979_3-2S.csv",absolutePath + "Dataset_X8004_2S.csv", absolutePath + "Dataset_X2922_2S.csv",absolutePath + "Dataset_X9193_3-2S.csv", absolutePath + "Dataset_X4559_3-2S.csv",absolutePath +"Dataset_X2599_3-2S.csv",absolutePath+"Dataset_X_3S_30-30.csv",absolutePath+"Dataset_X4523_3S.csv"],
+                             [absolutePath +"Dataset_y7979_3-2S.csv",absolutePath + "Dataset_y8004_2S.csv", absolutePath + "Dataset_y2922_2S.csv",absolutePath + "Dataset_y9193_3-2S.csv", absolutePath + "Dataset_y4559_3-2S.csv",absolutePath +"Dataset_y2599_3-2S.csv",absolutePath+"Dataset_y_3S_30-30.csv",absolutePath+"Dataset_y4523_3S.csv"])
     data, labels = data_loader.load_data()
-    radar_dataset = RadarDataSet(data, labels, 0.4, appended_snr=True)
-
-    print((data_to_complex(radar_dataset.X_train).shape))
-    trainer = DocuCNNModel.Trainer(data_to_complex(radar_dataset.X_train).shape, 181)
+    #radar_dataset = RealImaginaryXDataSet(data, labels, 0.4, appended_snr=True)
+    radar_dataset = RealImaginaryRxxDataSet(data, labels, 0.4, appended_snr=True)
+    trainer = DocuCNNModel.Trainer((10,10,2), 181)
+    print("shape de la dataset d'entrainement :")
+    print(radar_dataset.X_train.shape)
     history = trainer.train(
-        data_to_complex(radar_dataset.X_train),
+        radar_dataset.X_train,
         radar_dataset.y_train,
-        epochs=30,
-        batch_size=100,
-        validation_data=(data_to_complex(radar_dataset.X_validation), radar_dataset.y_validation),
+        epochs=50,
+        batch_size=1000,
+        validation_data=(radar_dataset.X_validation, radar_dataset.y_validation),
 
     )
-    learningCurvePloter = LearningCurvesPlot()
+    learningCurvePloter = LearningCurvesPlot(metrics = ["binary_io_u"])
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("CNNzarrouk_bcross_b50_e30_sigmoid_adam")
+    trainer.saveModel("CNN_final_docu5_RealImaginaryRxx")
 
 
 

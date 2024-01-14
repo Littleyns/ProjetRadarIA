@@ -4,8 +4,8 @@ import tensorflow as tf
 from keras import Sequential, layers
 import keras
 import os
-import numpy as np
-from keras.layers.pooling import MaxPooling2D
+import keras.backend as K
+from keras.losses import binary_crossentropy
 
 from Data.DataLoader import DataLoader
 from Data.RadarDataSet import RadarDataSet
@@ -13,7 +13,7 @@ from Evaluation.plots import PredictedStepPlot, LearningCurvesPlot
 from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur, R2Score, Accuracy
 from sklearn.preprocessing import StandardScaler
 from Models.BasicAutoEncoder import BasicAutoEncoder
-
+import numpy as np
 
 class ArticleProfCNN2D:
     def __init__(self, model=None):
@@ -22,37 +22,32 @@ class ArticleProfCNN2D:
     class Trainer:
         def __init__(self, input_shape, output_dim):
             # Créez un modèle séquentiel
+            # Convolutional layers
             self.input_shape = input_shape
             model = keras.Sequential()
-            model.add(layers.InputLayer(input_shape=(input_shape[1], input_shape[1], 1)))
-            # Couche de convolution 1D avec 32 filtres, une fenêtre de 3 et une fonction d'activation ReLU
-            model.add(
-                layers.Conv2D(
-                    12,
-                    kernel_size=(3, 3),
-                    activation=layers.LeakyReLU(alpha=0.1)
+            model.add(layers.Conv2D(32, (3, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=input_shape,
+                                    padding='same'))
 
-                )
-            )
+            #model.add(layers.Conv2D(64, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
 
-            # Couche de convolution 2D supplémentaire
-            model.add(layers.Conv2D(12, kernel_size=(3, 3), activation=layers.LeakyReLU(alpha=0.1),padding='same'))
-            # Couche de convolution 2D supplémentaire
-            model.add(layers.Conv2D(6, kernel_size=(3, 3), activation=layers.LeakyReLU(alpha=0.1),padding='same'))
+            model.add(layers.Conv2D(64, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
 
-            model.add(MaxPooling2D(pool_size=(2, 2)))
-            # Aplatissement des données pour la couche dense
+            # Max pooling 2d
+            #model.add(layers.AvgPool2D(pool_size=(2, 2)))
+            # Flatten layer to transition from convolutional layers to fully connected layers
             model.add(layers.Flatten())
 
-            # Couche dense (entièrement connectée) avec 128 neurones
+            # Fully connected layers
             model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
             model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
             model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
-            # Couche de sortie avec une seule unité pour la classification binaire (par exemple, sigmoid pour la classification binaire)
-            model.add(layers.Dense(output_dim, activation="sigmoid"))
+            model.add(layers.Dropout(0.5))  # Dropout layer to prevent overfitting
+            model.add(layers.Dense(output_dim, activation='sigmoid'))  # Binary classification (sigmoid activation)
 
             # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
-            model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+            model.compile(
+                optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
+            )
 
             # Résumé du modèle
             model.summary()
@@ -73,6 +68,14 @@ class ArticleProfCNN2D:
             # Affichez un résumé du modèle
             self.model.summary()
             return history
+
+        def threshold_binary_crossentropy(self,y_true, y_pred, threshold=0.5):
+            # Appliquer le seuil à y_pred
+            # Get K maximums and set them to 1
+            y_pred_thresholded = K.cast(K.greater(y_pred, threshold), K.floatx())
+
+            # Calculer la binary crossentropy
+            return binary_crossentropy(y_true, y_pred_thresholded)
 
         def saveModel(self, name):
             self.model.save("./saved/" + name)
@@ -102,20 +105,24 @@ class ArticleProfCNN2D:
 
 
 if __name__ == "__main__":
-    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X6687.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y6687.csv")
+    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X4559_3-2S.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y4559_3-2S.csv")
     data, labels = data_loader.load_data()
-    radar_dataset = RadarDataSet(data, labels, 0.3)
-    radar_dataset.load_Rxx()
 
 
-    trainer = ArticleProfCNN2D.Trainer(radar_dataset.Rxx_train.shape, 181)
+
+    #bae = BasicAutoEncoder()
+    #bae.load("AutoEncoderRxx")
+    #encoded_Rxx = bae.encode(Rxx_im_complex).squeeze() #(10,10)
+    radar_dataset = RadarDataSet(data, labels, 0.3, appended_snr=True)
+    radar_dataset.load_Rxx_r_i()
+    trainer = ArticleProfCNN2D.Trainer((10,10,2), 181)
     history = trainer.train(
-        radar_dataset.Rxx_train,
+        radar_dataset.X_train,
         radar_dataset.y_train,
-        epochs=20,
-        batch_size=1000,
-        validation_data=(radar_dataset.Rxx_validation, radar_dataset.y_validation),
+        epochs=50,
+        batch_size=200,
+        validation_data=(radar_dataset.X_validation, radar_dataset.y_validation),
     )
     learningCurvePloter = LearningCurvesPlot()
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("CNN2D_article")
+    trainer.saveModel("CNN2D_article_Rxx_r_i")

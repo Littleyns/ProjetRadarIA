@@ -7,8 +7,12 @@ class DataLoader:
         self.dataLabelsPath = labelpath
 
     def load_data(self):
-        data = pd.read_csv(self.dataPath, index_col=False)
-        labels = pd.read_csv(self.dataLabelsPath, index_col=False)
+        if(type(self.dataPath)==list and type(self.dataLabelsPath)==list):
+            data = pd.concat([pd.read_csv(path, index_col=False) for path in self.dataPath], ignore_index=True)
+            labels = pd.concat([pd.read_csv(path, index_col=False) for path in self.dataLabelsPath], ignore_index=True)
+        else:
+            data = pd.read_csv(self.dataPath, index_col=False)
+            labels = pd.read_csv(self.dataLabelsPath, index_col=False)
 
         data = np.array(data)#.transpose()
         labels = np.array(labels)#.transpose()

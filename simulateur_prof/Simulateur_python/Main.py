@@ -105,7 +105,8 @@ def radar_get_matched_filter(waveform, win_type=1):
     H = np.fft.fft(tmp, nsamp, axis=1)
     return mfcoeff, H, win
 
-def data_generation(doa, txSig_chan, N,d,SNR):
+
+def data_generation(doa, txSig_chan, N,d,SNR,H):
     theta = np.zeros(181)
 
     # Réception array
@@ -119,15 +120,13 @@ def data_generation(doa, txSig_chan, N,d,SNR):
     data = np.concatenate([Rxx.real.flatten(), Rxx.imag.flatten()]).reshape(
         1, -1
     )
-    theta[doa] = 1
+
+    theta[doa+90] = 1
     label = theta.reshape(1,-1)
     # Add SNR at last column
-    np.hstack((label, [[SNR]]))
+    label = np.hstack((label, [[SNR]]))
 
     return Rxx, data, label
-# def ula_array(N, d, theta):
-#    return np.exp(1j * 2 * np.pi * d * np.arange(N) * np.sin(np.radians(theta)))
-
 
 # Paramètres du système
 fc = 2.725e9
@@ -154,65 +153,58 @@ R = np.array([[cibleA], [cibleB]])
 txSig_chan = radar_channel(txSig, fc, fs, R, True)
 # Radar Matched Filter
 mf_coeff, H, winTemp = radar_get_matched_filter(LFM)
+start_time = time.time()
+for SNR in range(-5,30,1):
+  # Canal radar en espace libre
+  #Dtheta = np.array([2, 4 , 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
+  Dtheta = [2, 4 , 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+  Dtheta = [dtheta + random.randint(0, dtheta) for dtheta in Dtheta]
+  Dtheta = np.array(Dtheta)
+  theta = np.arange(-90, 91, 1)
+  for j, dtheta in enumerate(Dtheta):
+      theta1 = np.arange(
+          -60, 61 - dtheta, 1
+      )
+      theta2 = theta1 + dtheta
+      M = 2 #Nombre de cible
+      R = np.array([[random.randint(10, 30)], [random.randint(10, 30)]])
+      txSig_chan = radar_channel(txSig, fc, fs, R, two_way=True)
+      sigPower = np.sum(np.abs(txSig_chan) ** 2, axis=1) / txSig_chan.shape[1]
+      sigPower = np.sqrt(sigPower[0] / sigPower[1:])[0]
+      txSig_chan[1:, :] *= sigPower
+      for i, (doa1, doa2) in enumerate(zip(theta1, theta2)):
 
-for i in range(1):
-    # Canal radar en espace libre
+          #SNR = random.randint(-5, 30)
+          doa = np.array([doa1, doa2])
 
-
-    sigPower = np.sum(np.abs(txSig_chan) ** 2, axis=1) / txSig_chan.shape[1]
-    sigPower = np.sqrt(sigPower[0] / sigPower[1:])[0]
-
-    temporaryVar1 = txSig_chan[1:, :]
-    txSig_chan[1:, :] *= sigPower
-
-    Dtheta = np.array([2])  # , 4 , 6, 8, 10, 12, 14, 16, 18, 20, 22, 24])
-    theta = np.arange(-90, 91, 1)
-
-    for j, dtheta in enumerate(Dtheta):
-        theta1 = np.arange(
-            -60, 61 - dtheta, 1
-        )  # Redemander au prof l'explication de cette partie Dtheta
-        theta2 = theta1 + dtheta
-
-        #data = np.zeros((200, len(theta1)))
-        #label = np.zeros((180, len(theta1)))
-        for i, (doa1, doa2) in enumerate(zip(theta1, theta2)):
-            SNR = 30 + random.randint(-10, 10)
-            doa = np.array([doa1, doa2])
-            Rxx, data, label = data_generation(doa, txSig_chan, N,d, SNR )
-            if MODE_CALCUL == "gpu":
-                Dataset_X = pd.concat(
-                    [Dataset_X, pd.DataFrame(data.get())],
-                    ignore_index=True,
-                )
-                Dataset_y = pd.concat(
-                    [
-                        Dataset_y,
-                        pd.DataFrame(label.get()),
-                    ],
-                    ignore_index=True,
-                )
-            else:
-                Dataset_X = pd.concat(
-                    [Dataset_X, pd.DataFrame(data)],
-                    ignore_index=True,
-                )
-                Dataset_y = pd.concat(
-                    [
-                        Dataset_y,
-                        pd.DataFrame(label),
-                    ],
-                    ignore_index=True,
-                )
-
-    # Affichage des résultats
-
+          Rxx, data, label = data_generation( doa, txSig_chan, N,d, SNR,H )
+          if MODE_CALCUL == "gpu":
+              Dataset_X = pd.concat(
+              [Dataset_X, pd.DataFrame(data.get())],
+              ignore_index=True,
+              )
+              Dataset_y = pd.concat(
+              [
+                  Dataset_y,
+                  pd.DataFrame(label.get()),
+              ],
+              ignore_index=True,
+              )
+          else:
+              Dataset_X = pd.concat(
+              [Dataset_X, pd.DataFrame(data)],
+              ignore_index=True,
+              )
+              Dataset_y = pd.concat(
+              [
+                  Dataset_y,
+                  pd.DataFrame(label),
+              ],
+              ignore_index=True,
+              )
 
 end_time = time.time()
-
-# Calculez la durée totale
 execution_time = end_time - start_time
-
 print(f"Le code a pris {execution_time} secondes pour s'exécuter.")
 if MODE_CALCUL == "gpu":
     thetaM = nump.arange(-90, 91, 0.1)
