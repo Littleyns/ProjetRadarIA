@@ -75,28 +75,34 @@ class ErrorOfSNRPlot(Evaluateur):
         plt.show()
 
 class MusicVsModelBySNR(Evaluateur):
-    def evaluate(self, snr_values, y_pred_music, y_true, y_pred, Nsources=2, errorFunc = 'f1_score'):
+
+    def __init__(self, errorFunc = 'f1_score', Nsources=2, step=1):
+        self.step = step
+        self.errorFunc = errorFunc
+        self.Nsources = Nsources
+    def evaluate(self, snr_values_music, y_true_music, y_pred_music, snr_values_model, y_true_model, y_pred_model):
 
 
         #Pmusic, EN = music_doa(Rxx, thetaM, Nsources)
-        df = pd.DataFrame({'SNR': snr_values, 'y_true': list(y_true), 'y_pred': list(y_pred)})
-        df_music = pd.DataFrame({'SNR': snr_values, 'y_true': list(y_true), 'y_pred': list(y_pred_music)})
+        df_music= pd.DataFrame({'SNR': snr_values_music, 'y_true': list(y_true_music), 'y_pred': list(y_pred_music)})
+        df = pd.DataFrame({'SNR': snr_values_model, 'y_true': list(y_true_model), 'y_pred': list(y_pred_model)})
+        if self.step != 1:
+            df = df.query(f"SNR %{self.step} == 0")
+            df_music = df_music.query(f"SNR %{self.step} == 0")
         # Calculez le RMSE pour chaque groupe de SNR
-        if(errorFunc == 'accuracy_score'):
+        if(self.errorFunc == 'accuracy_score'):
             rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(
                 accuracy_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
-
             rmse_values_music=df_music.groupby('SNR').apply(lambda group: np.sqrt(
                 accuracy_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
-        elif errorFunc == 'roc_auc_score':
+        elif self.errorFunc == 'roc_auc_score':
             rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(
                 roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
             rmse_values_music=df_music.groupby('SNR').apply(lambda group: np.sqrt(
                 roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
-        elif errorFunc == 'rmse':
-            rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),Nsources=Nsources, verbose=False)))
-
-            rmse_values_music = df_music.groupby('SNR').apply(lambda group: np.sqrt(RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),Nsources=Nsources, verbose=False)))
+        elif self.errorFunc == 'rmse':
+            rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),Nsources=self.Nsources, verbose=False)))
+            rmse_values_music = df_music.groupby('SNR').apply(lambda group: np.sqrt(RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),Nsources=self.Nsources, verbose=False)))
         else:
             rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(
                 f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
@@ -104,13 +110,13 @@ class MusicVsModelBySNR(Evaluateur):
                 f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
 
         # Créez le diagramme à barres
-        plt.title("Music VS CNN Model "+str(Nsources)+" Sources")
+        plt.title("Music VS CNN Model "+str(self.Nsources)+" Sources")
         plt.plot(rmse_values_model.index, rmse_values_model, color='blue', label="CNN Model")
-        plt.plot(rmse_values_music.index, rmse_values_music, color='red', label = "MUSIC")
+        plt.plot(rmse_values_music.index, rmse_values_music, color='darkorange', label = "MUSIC")
         plt.legend()
         # Ajoutez des étiquettes et un titre
         plt.xlabel('SNR')
-        plt.ylabel(errorFunc)
+        plt.ylabel(self.errorFunc)
         plt.title('score/error par SNR')
 
         # Affichez le diagramme

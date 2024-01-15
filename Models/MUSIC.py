@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Data.DataLoader import DataLoader
-from Data.RadarDataSet import RadarDataSet,recreate_rxx
+from Data.RadarDataSet import RadarDataSet, recreate_rxx, RealImaginaryRxxDataSet, RxxDataSet
+from Evaluation.statistic_errors import RMSEEvaluateur
 
 
 class MUSICModel:
@@ -53,10 +54,10 @@ class MUSICModel:
             Pmusiclog10 = np.log10(Pmusic)
             musicPredictedAngles = (np.argsort(Pmusiclog10)[::-1][:2]*round(self.theta[1] - self.theta[0],2))-90
             y_music_predicted_angles += musicPredictedAngles,
-            thetaRes = np.zeros(180)
+            thetaRes = np.zeros(181)
             thetaRes[[int(doa)+90 for doa in musicPredictedAngles]] = 1
             y_music_predicted_multilabel += thetaRes,
-        return np.array(y_music_predicted_angles), np.array(y_music_predicted_multilabel)
+        return np.asarray(y_music_predicted_angles), np.asarray(y_music_predicted_multilabel)
 
     def plot(self, Pmusiclog10):
         plt.figure()
@@ -72,8 +73,8 @@ class MUSICModel:
 if __name__ == "__main__":
     data_loader = DataLoader("../Data/Dataset_X2922_2S.csv", "../Data/Dataset_y2922_2S.csv")
     data, labels = data_loader.load_data()
-    radar_dataset = RadarDataSet(data, labels, 0.4,appended_snr=True, scaler=None)  # 0.2 is the test size ( 80% train data, 20% test data)
-    Rxx_test = recreate_rxx(radar_dataset.X_test)
+    radar_dataset = RxxDataSet(data, labels, 0.1,appended_snr=True, scaler=None)  # 0.2 is the test size ( 80% train data, 20% test data)
     musicModel = MUSICModel(2, np.arange(-90, 90, 0.1))
-
-    musicModel.predict(Rxx_test)
+    y_music_predicted_angles, y_music_predicted_multilabel = musicModel.predict(radar_dataset.X_test)
+    test = RMSEEvaluateur().evaluate(radar_dataset.y_test, y_music_predicted_multilabel, 2)
+    print(test)

@@ -50,6 +50,41 @@ class DocuCNNModel:
 
             return total_loss
 
+        @staticmethod
+        def angleSensitiveCustomLoss(y_true, y_pred):
+            # Trouver les indices des occurrences de 1 dans y_true pour chaque exemple du batch
+            angles = tf.where(tf.equal(y_true, 1))
+            angles_penalties = tf.TensorArray(tf.float32, size=tf.shape(y_true)[0], dynamic_size=True,
+                                              clear_after_read=False)
+
+            def loop_body(i, angles_penalties):
+                indices_ones_i = tf.where(tf.equal(y_true[i], 1))
+                theta = tf.range(0, 181, 1, dtype=tf.float32)
+                penalties_raw = tf.abs(tf.cast(indices_ones_i, tf.float32) - theta)
+                penalties = tf.reduce_min(penalties_raw, axis=0) * y_pred[i]
+                angles_penalties.write(i, penalties).mark_used()
+
+                return i + 1, angles_penalties
+
+            _, angles_penalties = tf.while_loop(
+                lambda i, _: i < tf.shape(y_true)[0],
+                loop_body,
+                [0, angles_penalties]
+            )
+            # Convertir angles_penalties en un Tensor
+            angles_penalties = angles_penalties.stack()
+            # Réduire les dimensions pour rendre les formes compatibles
+            angles_penalties = tf.cast(tf.reduce_mean(tf.reduce_sum(angles_penalties, axis=1)), tf.float32)
+            bce = tf.keras.losses.BinaryCrossentropy(axis=1)
+
+            # Calculer la perte
+            base_loss = bce(tf.cast(y_true, tf.float32), tf.cast(y_pred, tf.float32))
+            # Utiliser angles_penalties dans le calcul de la perte
+            loss = base_loss + (0.05 * angles_penalties)
+
+            return loss
+
+
         def __init__(self, input_shape, output_dim):
         # Define the Leaky ReLU activation function
 
@@ -82,7 +117,7 @@ class DocuCNNModel:
 
                     # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
             model.compile(
-                optimizer='adam', loss="binary_crossentropy", metrics=[tf.keras.metrics.BinaryIoU(target_class_ids=[0, 1], threshold=0.4),tf.keras.metrics.BinaryIoU(target_class_ids=[0, 1], threshold=0.45)],run_eagerly=True
+                optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(axis=1), metrics=[tf.keras.metrics.BinaryIoU(target_class_ids=[0, 1], threshold=0.4)],run_eagerly=True
             )
 
             # Résumé du modèle
@@ -136,12 +171,13 @@ class DocuCNNModel:
         if custom_loss==False:
             self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name)
         else:
-            self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name, custom_objects={custom_loss: self.Trainer.custom_loss})
+            self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name, custom_objects={'angleSensitiveCustomLoss': self.Trainer.angleSensitiveCustomLoss})
 
 if __name__ == "__main__":
     absolutePath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/"
-    data_loader = DataLoader([absolutePath +"Dataset_X7979_3-2S.csv",absolutePath + "Dataset_X8004_2S.csv", absolutePath + "Dataset_X2922_2S.csv",absolutePath + "Dataset_X9193_3-2S.csv", absolutePath + "Dataset_X4559_3-2S.csv",absolutePath +"Dataset_X2599_3-2S.csv",absolutePath+"Dataset_X_3S_30-30.csv",absolutePath+"Dataset_X4523_3S.csv"],
-                             [absolutePath +"Dataset_y7979_3-2S.csv",absolutePath + "Dataset_y8004_2S.csv", absolutePath + "Dataset_y2922_2S.csv",absolutePath + "Dataset_y9193_3-2S.csv", absolutePath + "Dataset_y4559_3-2S.csv",absolutePath +"Dataset_y2599_3-2S.csv",absolutePath+"Dataset_y_3S_30-30.csv",absolutePath+"Dataset_y4523_3S.csv"])
+    data_loader = DataLoader([absolutePath+"Dataset_X165_2S", absolutePath +"Dataset_X7979_3-2S.csv",absolutePath + "Dataset_X8004_2S.csv", absolutePath + "Dataset_X2922_2S.csv",absolutePath + "Dataset_X9193_3-2S.csv", absolutePath + "Dataset_X4559_3-2S.csv",absolutePath +"Dataset_X2599_3-2S.csv",absolutePath+"Dataset_X4523_3S.csv"],
+                             [absolutePath+"Dataset_y165_2S", absolutePath +"Dataset_y7979_3-2S.csv",absolutePath + "Dataset_y8004_2S.csv", absolutePath + "Dataset_y2922_2S.csv",absolutePath + "Dataset_y9193_3-2S.csv", absolutePath + "Dataset_y4559_3-2S.csv",absolutePath +"Dataset_y2599_3-2S.csv",absolutePath+"Dataset_y4523_3S.csv"])
+
     data, labels = data_loader.load_data()
     #radar_dataset = RealImaginaryXDataSet(data, labels, 0.4, appended_snr=True)
     radar_dataset = RealImaginaryRxxDataSet(data, labels, 0.4, appended_snr=True)
@@ -151,14 +187,14 @@ if __name__ == "__main__":
     history = trainer.train(
         radar_dataset.X_train,
         radar_dataset.y_train,
-        epochs=50,
-        batch_size=1000,
+        epochs=15,
+        batch_size=500,
         validation_data=(radar_dataset.X_validation, radar_dataset.y_validation),
 
     )
     learningCurvePloter = LearningCurvesPlot(metrics = ["binary_io_u"])
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("CNN_final_docu5_RealImaginaryRxx")
+    trainer.saveModel("CNN_final_docu7")
 
 
 

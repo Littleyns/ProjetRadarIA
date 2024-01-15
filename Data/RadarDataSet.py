@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
 
@@ -93,6 +94,14 @@ class RadarDataSet:
 
         # Affichez le graphique
         plt.show()
+
+    def save_by_snr(self, f_name):
+        df = pd.DataFrame({'SNR': self.snr_values, 'y': list(self.y), 'X': list(self.X)})
+        grouped_data = df.groupby('SNR')
+
+        # Parcourir chaque groupe et enregistrer dans un fichier CSV
+        for group_name, group_data in grouped_data:
+            group_data.to_csv(f'../Data/{f_name}/SNR_{group_name}.csv', index=False)
 
 def recreate_rxx_abs(data):
     real_part = data[:, : data.shape[1] // 2].reshape(-1, 10, 10)
