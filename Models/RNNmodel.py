@@ -10,26 +10,23 @@ from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur
 from sklearn.preprocessing import StandardScaler
 from Models.BasicAutoEncoder import BasicAutoEncoder
 import numpy as np
-
+import pandas as pd
 class RNNModel:
     def __init__(self, model = None):
         self.model = model
     class Trainer:
-        def __init__(self, input_shape, output_dim):
+        def __init__(self):
             # Créez un modèle séquentiel
             self.model = Sequential()
-            self.model.add(layers.InputLayer(input_shape=input_shape))
             self.model.add(layers.LSTM(181, input_shape=(5, 181), activation='linear'))
-            self.model.add(layers.Dense(output_dim, activation="linear"))
-            self.model.compile(optimizer='adam',
-                          loss='mean_squared_error',
-                          metrics=['accuracy','mae', 'mse'])
+            self.model.add(layers.Dense(181, activation="linear"))
+            self.model.compile(optimizer='adam', loss='mean_squared_error')
 
             # Résumé du modèle
             self.model.summary()
 
         def train(
-                self, X_train, y_train, epochs=30, batch_size=1, validation_data=None
+                self, X_train, y_train, epochs=30, batch_size=1, validation_split=0.2
         ):
             # Entraînez le modèle avec vos données d'entraînement et vos étiquettes
             self.X_train = X_train
@@ -38,7 +35,7 @@ class RNNModel:
                 y_train,
                 epochs=epochs,
                 batch_size=batch_size,
-                validation_data=validation_data,
+                validation_split=validation_split,
             )
             # Affichez un résumé du modèle
             self.model.summary()
@@ -63,15 +60,22 @@ class RNNModel:
 
     def load(self, name):
         self.model = keras.models.load_model(os.getcwd()+'/Models/saved/'+name)
-
+def get_dataset(path):
+  data = pd.read_csv(path,header=None, index_col=False)
+  X = data.iloc[1:,:5].values
+  y = data.iloc[1:,5].values
+  sy = list(map(lambda yy: yy.strip('][').split(', '),y))
+  y = np.array(sy).astype(np.float32)
+  X = np.array([ list(map(lambda mesure: mesure.strip('][').split(', '),X[i]))for i in range(len(X))]).astype(np.float32)
+  return X,y
 if __name__ == "__main__":
-    data_loader = DataLoader("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_X6687.csv","C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/Dataset_y6687.csv")
-    data, labels = data_loader.load_data()
-    radar_dataset = RadarDataSet(data, labels, 0.05)
+    X, y = get_dataset("C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/temporal_measures_trainset.csv")
 
-    trainer = RNNModel.Trainer(radar_dataset.X_train.shape, 180)
-    history = trainer.train(radar_dataset.X_train, radar_dataset.y_train, epochs = 30, batch_size=10)#, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
+
+    trainer = RNNModel.Trainer()
+    history = trainer.train(X, y, epochs = 70, batch_size=50, validation_split=0.2)#, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
+
+    trainer.saveModel("RNNModel1")
     learningCurvePloter = LearningCurvesPlot()
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("RNNModel1")
 
