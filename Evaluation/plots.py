@@ -54,17 +54,17 @@ class ErrorOfSNRPlot(Evaluateur):
 
         # Calculez le RMSE pour chaque groupe de SNR
         if(errorFunc == 'accuracy_score'):
-            rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
+            metric_values = df.groupby('SNR').apply(lambda group: np.sqrt(
                 accuracy_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
         elif errorFunc == 'roc_auc_score':
-            rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
-                roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
+            metric_values = df.groupby('SNR').apply(lambda group: np.sqrt(
+                roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='samples')))
         else:
-            rmse_values = df.groupby('SNR').apply(lambda group: np.sqrt(
-                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
+            metric_values = df.groupby('SNR').apply(lambda group: np.sqrt(
+                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='samples')))
 
         # Créez le diagramme à barres
-        plt.plot(rmse_values.index, rmse_values, color='blue')
+        plt.plot(metric_values.index, metric_values, color='blue')
 
         # Ajoutez des étiquettes et un titre
         plt.xlabel('SNR')
@@ -97,17 +97,17 @@ class MusicVsModelBySNR(Evaluateur):
                 accuracy_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
         elif self.errorFunc == 'roc_auc_score':
             rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(
-                roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
+                roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='samples')))
             rmse_values_music=df_music.groupby('SNR').apply(lambda group: np.sqrt(
                 roc_auc_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
         elif self.errorFunc == 'rmse':
-            rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),Nsources=self.Nsources, verbose=False)))
-            rmse_values_music = df_music.groupby('SNR').apply(lambda group: np.sqrt(RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),Nsources=self.Nsources, verbose=False)))
+            rmse_values_model = df.groupby('SNR').apply(lambda group: RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist(),Nsources=self.Nsources, verbose=False)))
+            rmse_values_music = df_music.groupby('SNR').apply(lambda group: RMSEEvaluateur().evaluate(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist(),Nsources=self.Nsources, verbose=False)))
         else:
             rmse_values_model = df.groupby('SNR').apply(lambda group: np.sqrt(
-                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='micro')))
+                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='samples')))
             rmse_values_music=df_music.groupby('SNR').apply(lambda group: np.sqrt(
-                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()))))
+                f1_score(np.array(group['y_true'].tolist()), np.array(group['y_pred'].tolist()),average='samples')))
 
         # Créez le diagramme à barres
         plt.title("Music VS CNN Model "+str(self.Nsources)+" Sources")

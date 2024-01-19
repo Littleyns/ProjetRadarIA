@@ -13,8 +13,7 @@ import time
 import chainer
 import random
 import pandas as pd
-
-from utils import get_mode_calcul
+from simulateur_prof.Simulateur_python.sim_utils import get_mode_calcul
 
 chainer.print_runtime_info()
 # Enregistrez le temps de début

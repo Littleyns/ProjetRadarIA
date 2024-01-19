@@ -6,7 +6,7 @@ from keras.losses import Loss
 from keras.src.backend import binary_crossentropy
 
 from Data.DataLoader import DataLoader
-from Data.RadarDataSet import RadarDataSet, AlternatedRealImaginaryDataSet
+from Data.RadarDataSet import RadarDataSet, AlternatedRealImaginaryDataSet, RealImaginaryXDataSet
 from Evaluation.plots import PredictedStepPlot
 from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur
 import keras.backend as K
@@ -15,22 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from Models.BasicAutoEncoder import BasicAutoEncoder
 import os
 
-class CosineSimilarityLoss(Loss):
-    def __init__(self, name='cosine_similarity_loss', **kwargs):
-        super(CosineSimilarityLoss, self).__init__(name=name, **kwargs)
-    def call(self, y_true, y_pred):
-        # Récupérer les indices des deux plus grandes valeurs dans y_true et y_pred
-        #indices_true = K.argsort(y_true, axis=-1)[:, -2:]
-        #indices_pred = K.argsort(y_pred, axis=-1)[:, -2:]
 
-        # Trier les indices
-        #sorted_indices_true = K.sort(indices_true)
-        #sorted_indices_pred = K.sort(indices_pred)
-
-        # Calculer le RMSE entre les indices triés
-        #rmse = K.sqrt(K.mean(K.square(sorted_indices_true - sorted_indices_pred), axis=-1))
-
-        return tf.reduce_mean(tf.math.square(y_pred - y_true))
 class BasicNNModel:
 
     def __init__(self, model = None):
@@ -53,17 +38,39 @@ class BasicNNModel:
 
             return total_loss
 
-        def custom_weighted_binary_crossentropy(self, y_true, y_pred):
-            # Calculez la perte binaire cross-entropy standard
-            binary_crossentropy_loss = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+        @staticmethod
+        def angleSensitiveCustomLoss(y_true, y_pred):
+            # Trouver les indices des occurrences de 1 dans y_true pour chaque exemple du batch
+            angles = tf.where(tf.equal(y_true, 1))
+            angles_penalties = tf.TensorArray(tf.float32, size=tf.shape(y_true)[0], dynamic_size=True,
+                                              clear_after_read=False)
 
-            # Calculez les poids en fonction de la distance angulaire
-            weights = tf.math.log1p(tf.abs(y_true - y_pred))
+            def loop_body(i, angles_penalties):
+                indices_ones_i = tf.where(tf.equal(y_true[i], 1))
+                theta = tf.range(0, 181, 1, dtype=tf.float32)
+                penalties_raw = tf.abs(tf.cast(indices_ones_i, tf.float32) - theta)
+                penalties = tf.reduce_min(penalties_raw, axis=0) * y_pred[i]
+                angles_penalties.write(i, penalties).mark_used()
 
-            # Appliquez les poids à la perte
-            weighted_loss = tf.reduce_sum(binary_crossentropy_loss * weights) / tf.reduce_sum(weights)
+                return i + 1, angles_penalties
 
-            return weighted_loss
+            _, angles_penalties = tf.while_loop(
+                lambda i, _: i < tf.shape(y_true)[0],
+                loop_body,
+                [0, angles_penalties]
+            )
+            # Convertir angles_penalties en un Tensor
+            angles_penalties = angles_penalties.stack()
+            # Réduire les dimensions pour rendre les formes compatibles
+            angles_penalties = tf.cast(tf.reduce_mean(tf.reduce_sum(angles_penalties, axis=1)), tf.float32)
+            bce = tf.keras.losses.BinaryCrossentropy(axis=1)
+
+            # Calculer la perte
+            base_loss = bce(tf.cast(y_true, tf.float32), tf.cast(y_pred, tf.float32))
+            # Utiliser angles_penalties dans le calcul de la perte
+            loss = base_loss + (0.05 * angles_penalties)
+
+            return loss
         def __init__(self, input_shape, output_dim):
             # Créez un modèle séquentiel
             self.input_shape = input_shape
@@ -79,7 +86,7 @@ class BasicNNModel:
             model.add(layers.Dense(output_dim, activation='sigmoid'))
 
             # Compilez le modèle
-            model.compile(optimizer='adam', loss=self.custom_loss, metrics=['accuracy'],run_eagerly=True)
+            model.compile(optimizer='adam', loss=self.angleSensitiveCustomLoss, metrics=['accuracy'],run_eagerly=True)
 
 
 
@@ -113,13 +120,19 @@ class BasicNNModel:
 
 if __name__ == "__main__":
     absolutePath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/"
-    data_loader = DataLoader([absolutePath+"Dataset_X8004_2S.csv",absolutePath+"Dataset_X2922_2S.csv",absolutePath+"Dataset_X9193_3-2S.csv",absolutePath+"Dataset_X4559_3-2S.csv"],
-                             [absolutePath+"Dataset_y8004_2S.csv",absolutePath+"Dataset_y2922_2S.csv",absolutePath+"Dataset_y9193_3-2S.csv",absolutePath+"Dataset_y4559_3-2S.csv"])
+    data_loader = DataLoader([absolutePath + "Dataset_X165_2S.csv", absolutePath + "Dataset_X7979_3-2S.csv",
+                              absolutePath + "Dataset_X8004_2S.csv", absolutePath + "Dataset_X2922_2S.csv",
+                              absolutePath + "Dataset_X9193_3-2S.csv", absolutePath + "Dataset_X4559_3-2S.csv",
+                              absolutePath + "Dataset_X2599_3-2S.csv", absolutePath + "Dataset_X4523_3S.csv"],
+                             [absolutePath + "Dataset_y165_2S.csv", absolutePath + "Dataset_y7979_3-2S.csv",
+                              absolutePath + "Dataset_y8004_2S.csv", absolutePath + "Dataset_y2922_2S.csv",
+                              absolutePath + "Dataset_y9193_3-2S.csv", absolutePath + "Dataset_y4559_3-2S.csv",
+                              absolutePath + "Dataset_y2599_3-2S.csv", absolutePath + "Dataset_y4523_3S.csv"])
     data, labels = data_loader.load_data()
-    radar_dataset = AlternatedRealImaginaryDataSet(data, labels, 0.1, appended_snr=True)
+    radar_dataset = RadarDataSet(data, labels, 0.1, appended_snr=True)
 
 
     trainer2 = BasicNNModel.Trainer((200,), 181)
-    trainer2.train(radar_dataset.X_train, radar_dataset.y_train, epochs=20, batch_size=500,validation_data=(radar_dataset.X_validation, radar_dataset.y_validation))
-    trainer2.saveModel("tempDNNModel_4_1000")
+    trainer2.train(radar_dataset.X_train, radar_dataset.y_train, epochs=10, batch_size=2000,validation_data=(radar_dataset.X_validation, radar_dataset.y_validation))
+    trainer2.saveModel("DNN1_e10,b2000_sensitiveAngleLoss_Alternate_concatenatedXRI")
 

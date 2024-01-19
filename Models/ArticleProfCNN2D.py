@@ -8,7 +8,7 @@ import keras.backend as K
 from keras.losses import binary_crossentropy
 
 from Data.DataLoader import DataLoader
-from Data.RadarDataSet import RadarDataSet
+from Data.RadarDataSet import RadarDataSet, RealImaginaryRxxDataSet
 from Evaluation.plots import PredictedStepPlot, LearningCurvesPlot
 from Evaluation.statistic_errors import MSEEvaluateur, RMSEEvaluateur, R2Score, Accuracy
 from sklearn.preprocessing import StandardScaler
@@ -113,8 +113,7 @@ if __name__ == "__main__":
     #bae = BasicAutoEncoder()
     #bae.load("AutoEncoderRxx")
     #encoded_Rxx = bae.encode(Rxx_im_complex).squeeze() #(10,10)
-    radar_dataset = RadarDataSet(data, labels, 0.3, appended_snr=True)
-    radar_dataset.load_Rxx_r_i()
+    radar_dataset = RealImaginaryRxxDataSet(data, labels, 0.3, appended_snr=True)
     trainer = ArticleProfCNN2D.Trainer((10,10,2), 181)
     history = trainer.train(
         radar_dataset.X_train,

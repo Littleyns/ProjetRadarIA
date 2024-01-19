@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from Data.DataLoader import DataLoader
 from Data.RadarDataSet import RadarDataSet, recreate_rxx, RealImaginaryRxxDataSet, RxxDataSet
 from Evaluation.statistic_errors import RMSEEvaluateur
-
+from scipy.signal import find_peaks
 
 class MUSICModel:
     def music_doa(self, Rxx, theta, M):
@@ -46,6 +46,14 @@ class MUSICModel:
         self.N_sources = N_sources
         self.theta = theta
 
+    def plot_music(self, Pmusiclog10):
+        peaks, _ = find_peaks(10 * Pmusiclog10, distance=4, height=0.2)
+        plt.figure()
+        thetaM = np.arange(-90, 91, 0.1)
+        plt.plot(thetaM, 10 * Pmusiclog10)
+        for peak in peaks:
+            plt.scatter(thetaM[peak], 10 * Pmusiclog10[peak])
+        plt.show()
     def predict(self,Rxx):
         y_music_predicted_angles = [] # format [angle1, angle2] (,N_source)
         y_music_predicted_multilabel = [] #format [0,0,0,1,....,1] (,180)
@@ -53,6 +61,7 @@ class MUSICModel:
             Pmusic, EN = self.music_doa(Rxx[i], self.theta, self.N_sources)
             Pmusiclog10 = np.log10(Pmusic)
             musicPredictedAngles = (np.argsort(Pmusiclog10)[::-1][:2]*round(self.theta[1] - self.theta[0],2))-90
+
             y_music_predicted_angles += musicPredictedAngles,
             thetaRes = np.zeros(181)
             thetaRes[[int(doa)+90 for doa in musicPredictedAngles]] = 1
@@ -71,10 +80,10 @@ class MUSICModel:
 
 
 if __name__ == "__main__":
-    data_loader = DataLoader("../Data/Dataset_X2922_2S.csv", "../Data/Dataset_y2922_2S.csv")
+    data_loader = DataLoader("../Data/last_data/Dataset_X5690_30-30_2S.csv", "../Data/last_data/Dataset_X5690_30-30_2S.csv")
     data, labels = data_loader.load_data()
-    radar_dataset = RxxDataSet(data, labels, 0.1,appended_snr=True, scaler=None)  # 0.2 is the test size ( 80% train data, 20% test data)
-    musicModel = MUSICModel(2, np.arange(-90, 90, 0.1))
+    radar_dataset = RxxDataSet(data, labels, 0.1,appended_snr=True, scaler=None)
+    musicModel = MUSICModel(2, np.arange(-90, 91, 0.1))
     y_music_predicted_angles, y_music_predicted_multilabel = musicModel.predict(radar_dataset.X_test)
     test = RMSEEvaluateur().evaluate(radar_dataset.y_test, y_music_predicted_multilabel, 2)
     print(test)

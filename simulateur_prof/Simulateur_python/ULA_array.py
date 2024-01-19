@@ -1,13 +1,10 @@
-from utils import get_mode_calcul
-
-
+from simulateur_prof.Simulateur_python.sim_utils import get_mode_calcul
 if get_mode_calcul() == "gpu":
     import cupy as np
 else:
     import numpy as np
 
-from scipy.signal import hamming, kaiser, blackman
-
+from scipy.signal.windows import hamming,kaiser,blackman
 
 def ula_array(N, d, theta, win_type=1):
     """

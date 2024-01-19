@@ -4,7 +4,6 @@ import numpy as np
 
 from PreProcessing.domaines.passage_freq import get_signal_frequentiel
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
 from scipy.interpolate import interp1d
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from PreProcessing.utils import augmentDataInterp, data_to_complex
@@ -54,21 +53,15 @@ class RadarDataSet:
         ) = train_test_split(X_test, y_test, test_size=0.5, random_state=self.seedDecoupageData)
         return X_train, X_test, X_validation, y_train, y_test, y_validation
 
-    def load_Rxx(self):
-        self.X = recreate_rxx(self.X)
-        self.X_train, self.X_test, self.X_validation, self.y_train, self.y_test, self.y_validation = self.data_split(self.X, self.y)
+    def plot_labels_distribution(self):
+        # Distribution des labels de la dataset
+        nombre_exemples_par_angle = np.sum(self.y, axis=0)
+        angles = np.arange(181) - 90
 
-    def load_Rxx_r_i(self): #Charge une dataset sous forme de Rxx reconstruit(10,10,2)
-        real_part = self.X[:, : self.X.shape[1] // 2].reshape(-1, 10, 10)
-        imag_part = self.X[:, self.X.shape[1] // 2:].reshape(-1, 10, 10)
-        Rxx_im_complex = np.stack((real_part, abs(imag_part)), axis=1)  # (n,2,10,10)
-        Rxx_im_complex = np.transpose(Rxx_im_complex, (0, 2, 3, 1))  # (n,10,10,2)
-        self.X = Rxx_im_complex
-        self.X_train, self.X_test, self.X_validation, self.y_train, self.y_test, self.y_validation = self.data_split(Rxx_im_complex, self.y)
+        # Créer l'histogramme
+        plt.figure(figsize=(10, 6))
+        plt.bar(angles, nombre_exemples_par_angle, color='blue', alpha=0.7)
 
-    def load_X_r_i(self): #Charge une dataset sous la forme (2,100) real,imaginaire
-        self.X = data_to_complex(self.X)
-        self.X_train, self.X_test, self.X_validation, self.y_train, self.y_test, self.y_validation = self.data_split(self.X, self.y)
     def plot(self, index):
         plt.figure(figsize=(10, 6))
         plt.plot(self.X[index], label="Signal")  # Tracez le signal
@@ -96,12 +89,20 @@ class RadarDataSet:
         plt.show()
 
     def save_by_snr(self, f_name):
-        df = pd.DataFrame({'SNR': self.snr_values, 'y': list(self.y), 'X': list(self.X)})
-        grouped_data = df.groupby('SNR')
+        df = pd.DataFrame({'SNR': self.snr_values, 'X': list(self.data), 'y': list(self.labels)})
 
         # Parcourir chaque groupe et enregistrer dans un fichier CSV
-        for group_name, group_data in grouped_data:
-            group_data.to_csv(f'../Data/{f_name}/SNR_{group_name}.csv', index=False)
+        for snr_value, group_data in df.groupby('SNR'):
+            # Séparer les colonnes 'X' et 'y'
+            x_data = group_data['X']
+            y_data = group_data['y']
+
+            # Ajouter 'SNR' à 'y'
+            snr_column = np.full((len(y_data), 1), snr_value)
+            y_data_with_snr = np.concatenate((y_data, snr_column), axis=1)
+
+            # Enregistrer 'x' dans un fichier CSV
+            x_data.to_csv(f'../Data/{f_name}/SNR_{snr_value}_X.csv', index=False, header=False)
 
 def recreate_rxx_abs(data):
     real_part = data[:, : data.shape[1] // 2].reshape(-1, 10, 10)

@@ -18,30 +18,34 @@ class RNNModel:
         def __init__(self, input_shape, output_dim):
             # Créez un modèle séquentiel
             self.model = Sequential()
-            model.add(layers.InputLayer(input_shape=(1, input_shape[1], 1)))
-            self.model.add(layers.ConvLSTM1D(filters=64, kernel_size=(1)))
-            self.model.add(layers.Flatten())
-            self.model.add(layers.Dense(output_dim))
+            self.model.add(layers.InputLayer(input_shape=input_shape))
+            self.model.add(layers.LSTM(181, input_shape=(5, 181), activation='linear'))
+            self.model.add(layers.Dense(output_dim, activation="linear"))
             self.model.compile(optimizer='adam',
-                          loss='binary_crossentropy',
+                          loss='mean_squared_error',
                           metrics=['accuracy','mae', 'mse'])
 
             # Résumé du modèle
             self.model.summary()
 
-
-
-
-
-        def train(self, X_train, y_train, epochs = 30, batch_size = 10, validation_data = None):
+        def train(
+                self, X_train, y_train, epochs=30, batch_size=1, validation_data=None
+        ):
             # Entraînez le modèle avec vos données d'entraînement et vos étiquettes
-            self.X_train = X_train.reshape(X_train.shape[0],1,X_train.shape[1],1)
-            history = self.model.fit(self.X_train, y_train, epochs=epochs, batch_size=batch_size)#, validation_data=validation_data)
+            self.X_train = X_train
+            history = self.model.fit(
+                X_train,
+                y_train,
+                epochs=epochs,
+                batch_size=batch_size,
+                validation_data=validation_data,
+            )
             # Affichez un résumé du modèle
             self.model.summary()
             return history
+
         def saveModel(self, name):
-            self.model.save("./saved/"+name)
+            self.model.save("./saved/" + name)
 
     def evaluate(self, X_test, y_test):
         tf.config.run_functions_eagerly(True)

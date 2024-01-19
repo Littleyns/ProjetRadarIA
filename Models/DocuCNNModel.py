@@ -62,7 +62,7 @@ class DocuCNNModel:
                 theta = tf.range(0, 181, 1, dtype=tf.float32)
                 penalties_raw = tf.abs(tf.cast(indices_ones_i, tf.float32) - theta)
                 penalties = tf.reduce_min(penalties_raw, axis=0) * y_pred[i]
-                angles_penalties.write(i, penalties).mark_used()
+                angles_penalties.write(i, penalties)
 
                 return i + 1, angles_penalties
 
@@ -80,7 +80,7 @@ class DocuCNNModel:
             # Calculer la perte
             base_loss = bce(tf.cast(y_true, tf.float32), tf.cast(y_pred, tf.float32))
             # Utiliser angles_penalties dans le calcul de la perte
-            loss = base_loss + (0.05 * angles_penalties)
+            loss = base_loss + (0.1 * angles_penalties)
 
             return loss
 
@@ -95,13 +95,13 @@ class DocuCNNModel:
             model = keras.Sequential()
 
             # Convolutional layers
-            model.add(layers.Conv2D(32, (2, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=input_shape, padding='same'))
+            model.add(layers.Conv2D(32, (3, 3), activation=layers.LeakyReLU(alpha=0.1), input_shape=input_shape, padding='same'))
 
 
-            model.add(layers.Conv2D(64, (2, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
+            model.add(layers.Conv2D(64, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
 
 
-            model.add(layers.Conv2D(128, (2, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
+            model.add(layers.Conv2D(128, (3, 3), activation=layers.LeakyReLU(alpha=0.1), padding='same'))
 
             #Max pooling 2d
             #model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -109,15 +109,15 @@ class DocuCNNModel:
             model.add(layers.Flatten())
 
             # Fully connected layers
-            model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
-            model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
-            model.add(layers.Dense(1500, activation=layers.LeakyReLU(alpha=0.1)))
-            model.add(layers.Dropout(0.5))  # Dropout layer to prevent overfitting
+            model.add(layers.Dense(1000, activation=layers.LeakyReLU(alpha=0.1)))
+            model.add(layers.Dense(1000, activation=layers.LeakyReLU(alpha=0.1)))
+            model.add(layers.Dense(1000, activation=layers.LeakyReLU(alpha=0.1)))
+            model.add(layers.Dropout(0.3))  # Dropout layer to prevent overfitting
             model.add(layers.Dense(output_dim, activation='sigmoid'))  # Binary classification (sigmoid activation)
 
                     # Compiler le modèle avec une fonction de perte (loss) appropriée et un optimiseur
             model.compile(
-                optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(axis=1), metrics=[tf.keras.metrics.BinaryIoU(target_class_ids=[0, 1], threshold=0.4)],run_eagerly=True
+                optimizer='adam', loss=self.angleSensitiveCustomLoss, metrics=["accuracy",tf.keras.metrics.BinaryIoU(target_class_ids=[1], threshold=0.4)]
             )
 
             # Résumé du modèle
@@ -167,34 +167,37 @@ class DocuCNNModel:
     def predict(self, test_data):
         return self.model.predict(test_data)
 
-    def load(self, name, custom_loss=False):
-        if custom_loss==False:
+    def load(self, name, custom_loss=None):
+        if custom_loss=="angleSensitiveCustomLoss":
             self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name)
         else:
-            self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name, custom_objects={'angleSensitiveCustomLoss': self.Trainer.angleSensitiveCustomLoss})
+            self.model = keras.models.load_model(os.getcwd() + "/Models/saved/" + name, custom_objects={custom_loss: self.Trainer.angleSensitiveCustomLoss})
 
 if __name__ == "__main__":
     absolutePath = "C:/Users/Younes srh/Desktop/I3/ProjetRadarIA/Data/"
-    data_loader = DataLoader([absolutePath+"Dataset_X165_2S", absolutePath +"Dataset_X7979_3-2S.csv",absolutePath + "Dataset_X8004_2S.csv", absolutePath + "Dataset_X2922_2S.csv",absolutePath + "Dataset_X9193_3-2S.csv", absolutePath + "Dataset_X4559_3-2S.csv",absolutePath +"Dataset_X2599_3-2S.csv",absolutePath+"Dataset_X4523_3S.csv"],
-                             [absolutePath+"Dataset_y165_2S", absolutePath +"Dataset_y7979_3-2S.csv",absolutePath + "Dataset_y8004_2S.csv", absolutePath + "Dataset_y2922_2S.csv",absolutePath + "Dataset_y9193_3-2S.csv", absolutePath + "Dataset_y4559_3-2S.csv",absolutePath +"Dataset_y2599_3-2S.csv",absolutePath+"Dataset_y4523_3S.csv"])
+
+    data_loader = DataLoader([absolutePath+'last_data/Dataset_X1684_30-5_2S.csv', absolutePath + 'Dataset_X8228_30-5_2S.csv',absolutePath+'Dataset_X8916_30-5_2S.csv', absolutePath+'Dataset_X165_30-5_2S.csv', absolutePath+'Dataset_X8004_30-5_2S.csv', absolutePath+'Dataset_X2922_30-5_2S.csv'],
+                             [absolutePath+'last_data/Dataset_y1684_30-5_2S.csv', absolutePath + 'Dataset_y8228_30-5_2S.csv',absolutePath+'Dataset_y8916_30-5_2S.csv', absolutePath+'Dataset_y165_30-5_2S.csv', absolutePath+'Dataset_y8004_30-5_2S.csv', absolutePath+'Dataset_y2922_30-5_2S.csv'])
+
+
 
     data, labels = data_loader.load_data()
     #radar_dataset = RealImaginaryXDataSet(data, labels, 0.4, appended_snr=True)
-    radar_dataset = RealImaginaryRxxDataSet(data, labels, 0.4, appended_snr=True)
-    trainer = DocuCNNModel.Trainer((10,10,2), 181)
+    radar_dataset = RealImaginaryXDataSet(data, labels, 0.1, appended_snr=True)
+    trainer = DocuCNNModel.Trainer((2,100,1), 181)
     print("shape de la dataset d'entrainement :")
     print(radar_dataset.X_train.shape)
     history = trainer.train(
         radar_dataset.X_train,
         radar_dataset.y_train,
-        epochs=15,
-        batch_size=500,
+        epochs=25,
+        batch_size=350,
         validation_data=(radar_dataset.X_validation, radar_dataset.y_validation),
 
     )
     learningCurvePloter = LearningCurvesPlot(metrics = ["binary_io_u"])
     learningCurvePloter.evaluate(history)
-    trainer.saveModel("CNN_final_docu7")
+    trainer.saveModel("CNN_docu10_XRI_e30_b350_anglesensitive_2S")
 
 
 

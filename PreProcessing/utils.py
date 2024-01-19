@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 def data_to_complex(data):
     data_im = data[:, 100:]
     data_real = data[:, :100]
-    return np.stack((data_im, data_real), axis=1)
+    return np.stack(( data_real,data_im), axis=1)
 
 
 def augmentDataInterp(data, new_dim):
