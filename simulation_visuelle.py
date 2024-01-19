@@ -66,7 +66,7 @@ class VisualSimu:
 
         self.model = DocuCNNModel()
         keras.utils.get_custom_objects()['angleSensitiveCustomLoss'] = self.model.Trainer.angleSensitiveCustomLoss
-        self.model.load("CNN_docu8_XRI_e30_b350_anglesensitive_2S", custom_loss="angleSensitiveCustomLoss")
+        self.model.load("CNN_docu10_XRI_e30_b350_anglesensitive_2S", custom_loss="angleSensitiveCustomLoss")
 
 
     def predict_doa(self, Rxx):
@@ -76,7 +76,7 @@ class VisualSimu:
         )
         data_im = Rxx[:, 100:]
         data_real = Rxx[:, :100]
-        Rxx = nump.stack((data_im, data_real), axis=1)
+        Rxx = nump.stack((data_real,data_im), axis=1)
         Rxx = scaler.fit_transform(Rxx.squeeze())
         if get_mode_calcul() == "gpu":
             doa = self.model.predict(np.array([Rxx]).get())
