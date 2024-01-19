@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 from scipy.constants import c
 from scipy.signal import windows
-from scipy.signal import chirp, correlate
 from MatchedFilter import matched_filter
 from Music_doa import music_doa
 from RadarChannel import radar_channel
@@ -13,7 +12,7 @@ import time
 import chainer
 import random
 import pandas as pd
-from simulateur_prof.Simulateur_python.sim_utils import get_mode_calcul
+from simulateur_prof.sim_utils import get_mode_calcul
 
 chainer.print_runtime_info()
 # Enregistrez le temps de début

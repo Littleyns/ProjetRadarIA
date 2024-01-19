@@ -1,21 +1,15 @@
 import keras
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from sklearn.preprocessing import StandardScaler
 from scipy.constants import c
-from Data.DataLoader import DataLoader
-from Data.RadarDataSet import RealImaginaryXDataSet
-from Evaluation.statistic_errors import RMSEEvaluateur
 from Models.DocuCNNModel import DocuCNNModel
-from Models.MUSIC import MUSICModel
-from sim_utils import get_mode_calcul
-from simulateur_prof.Simulateur_python.Main_NSources import lfm_waveform, radar_get_matched_filter,receive_array
+from simulateur_prof.sim_utils import get_mode_calcul
+from simulateur_prof.Main_NSources import lfm_waveform, radar_get_matched_filter,receive_array
 import random
 from sklearn.preprocessing import StandardScaler
-from simulateur_prof.Simulateur_python.MatchedFilter import matched_filter
-from simulateur_prof.Simulateur_python.RadarChannel import radar_channel
-from simulateur_prof.Simulateur_python.awgNoise import awgn_noise
+from simulateur_prof.MatchedFilter import matched_filter
+from simulateur_prof.RadarChannel import radar_channel
+from simulateur_prof.awgNoise import awgn_noise
 
 if get_mode_calcul() == "gpu":
     import cupy as np
