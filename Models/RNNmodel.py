@@ -76,6 +76,4 @@ if __name__ == "__main__":
     history = trainer.train(X, y, epochs = 70, batch_size=50, validation_split=0.2)#, validation_data=(radar_dataset.X_test,radar_dataset.y_test))
 
     trainer.saveModel("RNNModel1")
-    learningCurvePloter = LearningCurvesPlot()
-    learningCurvePloter.evaluate(history)
 

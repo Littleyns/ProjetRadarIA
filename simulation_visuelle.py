@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from simulateur_prof.MatchedFilter import matched_filter
 from simulateur_prof.RadarChannel import radar_channel
 from simulateur_prof.awgNoise import awgn_noise
+from Models.RNNmodel import RNNModel
 
 if get_mode_calcul() == "gpu":
     import cupy as np
@@ -57,8 +58,10 @@ class VisualSimu:
         self.M = 2 #nombre de sources
         self.sources = [] #pour chaque source [tupple_pos, tupple_vitesse]
         self.sources_instant_positions = []
+        self.history_positions = []
 
         Rfix = [10,17,26] #Fixation des rayons R
+
         for i in range(self.M):
             self.sources+=self.random_source1_inside_range(),
             self.sources[i][0][0] = Rfix[i]
@@ -67,6 +70,9 @@ class VisualSimu:
         self.model = DocuCNNModel()
         keras.utils.get_custom_objects()['angleSensitiveCustomLoss'] = self.model.Trainer.angleSensitiveCustomLoss
         self.model.load("CNN_docu10_XRI_e30_b350_anglesensitive_2S", custom_loss="angleSensitiveCustomLoss")
+
+        self.speedModel = RNNModel()
+        self.speedModel.load("RNNModel1")
 
 
     def predict_doa(self, Rxx):
@@ -94,8 +100,8 @@ class VisualSimu:
         return wave_intensity
 
     def get_signal_rxx(self):
-        R = np.array( [    [source[0][0]] for source in self.sources     ] )
-        doa = np.array([source[0][1] for source in self.sources])
+        R = np.array( [    [source[0]] for source in self.sources_instant_positions     ] )
+        doa = np.array([source[1] for source in self.sources_instant_positions])
         txSig_chan = radar_channel(self.txSig, self.fc, self.fs, R, two_way=True)
         sigPower = np.sum(np.abs(txSig_chan) ** 2, axis=1) / txSig_chan.shape[1]
         sigPower = np.sqrt(sigPower[0] / sigPower[1:])[0]
@@ -127,19 +133,33 @@ class VisualSimu:
 
         strPrintTrue = ''
         strPrintPred = ''
+        self.history_positions+= [],
         for i in range(self.M):
             # Pas besoin de faire le mouvement sur l'axe y
             #self.sources_instant_positions[i][0]= round(self.sources_instant_positions[i][0]+self.sources[i][1][0],1) #update R
 
             self.sources_instant_positions[i][1] += self.sources[i][1][1] #Update theta
+            self.history_positions[-1]+=self.sources_instant_positions[i].copy(),
             # Ajouter les points représentant les positions des sources
             self.ax.scatter(nump.radians(self.sources_instant_positions[i][1]), self.sources_instant_positions[i][0], c='r',marker=(i+1)*4,s=100)  # 'ro' représente le rouge
             self.ax.annotate(f'S{i}', xy=(nump.radians(self.sources_instant_positions[i][1]), self.sources_instant_positions[i][0]), xytext=(nump.radians(self.sources_instant_positions[i][1]), self.sources_instant_positions[i][0]-0.5))
             strPrintTrue += f"S{i}: pos"+str(self.sources_instant_positions[i])+" V="+str(self.sources[i][1])+"\n"
-            strPrintPred += f"pos" + f"(?, {str(doa[i])})" + " V=" + str(self.sources[i][1]) + "\n"
+            strPrintPred += f"pos" + f"(?, {str(doa[i])})"
         radar_positions = np.linspace(-60, 60, self.N)
         #wave_intensity = self.calculate_wave_intensity(radar_positions, [self.source1_position, self.source2_position], frame)
         self.ax.text(0,1,"True positions and speed \n"+strPrintTrue,fontsize="medium", fontweight="bold", bbox= dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9),transform=self.ax.transAxes, horizontalalignment='left')
+
+        if len(self.history_positions)>=5:
+            timeSerie = np.empty((0, 181))
+            series = []
+            for t in range(len(self.history_positions)-5, len(self.history_positions)):
+                theta = np.zeros(181)
+                theta[[int(self.history_positions[t][i][1]) for i in range(len(self.history_positions[t]))]] = 1
+                series.append(theta)
+            timeSerie = np.vstack([timeSerie] + series)
+            predicted_speed = np.round(self.speedModel.predict(np.array([timeSerie]))).squeeze()
+            for i in range(len(self.history_positions[-5])):
+                strPrintPred += f" V(S{i}=" + str(predicted_speed[int(self.history_positions[-5][i][1]+90)]) + "\n"
         self.ax.text(0,0,"Predicted positions and speed\n"+strPrintPred,fontsize="medium", fontweight="bold", bbox= dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9),transform=self.ax.transAxes, horizontalalignment='left')
 
         # Tracer l'intensité de l'onde
