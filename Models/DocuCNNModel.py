@@ -190,8 +190,8 @@ if __name__ == "__main__":
     history = trainer.train(
         radar_dataset.X_train,
         radar_dataset.y_train,
-        epochs=25,
-        batch_size=350,
+        epochs=30,
+        batch_size=150,
         validation_data=(radar_dataset.X_validation, radar_dataset.y_validation),
 
     )
